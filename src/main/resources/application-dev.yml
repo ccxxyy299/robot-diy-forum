@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    host: localhost
+    port: 3306
+    database: robot_diy_forum
+    username: user
+    password: yyy299
+
