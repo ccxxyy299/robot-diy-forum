@@ -1,5 +1,6 @@
 package com.slz.demo.common.exception;
 
+import com.slz.demo.common.enumeration.ErrorCode;
 import lombok.Getter;
 
 /**
@@ -18,5 +19,10 @@ public class BaseException extends RuntimeException {
     public BaseException(Integer code, String message) {
         super(message);
         this.code = code;
+    }
+
+    public BaseException(ErrorCode errorCode) {
+        super(errorCode.getMessage());
+        this.code = errorCode.getCode();
     }
 }

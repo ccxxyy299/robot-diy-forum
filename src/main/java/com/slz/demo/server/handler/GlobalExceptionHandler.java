@@ -1,5 +1,6 @@
 package com.slz.demo.server.handler;
 
+import com.slz.demo.common.enumeration.ErrorCode;
 import com.slz.demo.common.exception.BusinessException;
 import com.slz.demo.common.exception.ServerException;
 import com.slz.demo.common.result.Result;
@@ -23,7 +24,6 @@ public class GlobalExceptionHandler {
     /**
      * 业务异常
      */
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(BusinessException.class)
     public Result<String> handleBusinessException(BusinessException e) {
         log.warn("业务异常: {}", e.getMessage());
@@ -33,7 +33,6 @@ public class GlobalExceptionHandler {
     /**
      * 服务器异常
      */
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(ServerException.class)
     public Result<String> handleServerException(ServerException e) {
         log.error("服务器异常: {}", e.getMessage(), e);
@@ -43,7 +42,6 @@ public class GlobalExceptionHandler {
     /**
      * 参数校验异常
      */
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(BindException.class)
     public Result<String> handleBindException(BindException e) {
         String msg = e.getBindingResult().getAllErrors().stream()
@@ -56,10 +54,9 @@ public class GlobalExceptionHandler {
     /**
      * 其他系统异常
      */
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(Exception.class)
     public Result<String> handleException(Exception e) {
         log.error("系统异常", e);
-        return Result.error(500, "服务器内部错误");
+        return Result.error(ErrorCode.SERVER_ERROR.getCode(), ErrorCode.SERVER_ERROR.getMessage());
     }
 }

@@ -13,6 +13,7 @@ server:
   port: 8080
 
 mybatis-plus:
+  type-enums-package: com.slz.demo.common.enumeration
   global-config:
     db-config:
       logic-delete-field: isDeleted
@@ -22,8 +23,11 @@ mybatis-plus:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
 
-autotable:
+auto-table:
   mode: update
   show-banner: true
   model-package: com.slz.demo.pojo.entity
 
+jwt:
+  secret: ${jwt.secret}
+  expire: ${jwt.expire}

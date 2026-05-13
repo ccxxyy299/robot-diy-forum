@@ -6,3 +6,6 @@ spring:
     username: user
     password: yyy299
 
+jwt:
+  secret: robot-diy-forum_diy_forum2026slz
+  expire: 86400000
