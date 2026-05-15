@@ -41,6 +41,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = new User();
         user.setUsername(dto.getUsername());
         user.setEmail(dto.getEmail());
+        user.setNickname(dto.getNickname());
         user.setRole(UserRole.USER);
         user.setPassword(passwordUtil.encode(dto.getPassword()));
         save(user);

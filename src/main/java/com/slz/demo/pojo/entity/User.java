@@ -31,6 +31,9 @@ public class User {
     @Column(type = "varchar", length = 100, notNull = true, comment = "邮箱")
     private String email;
 
+    @Column(type = "varchar", length = 50, notNull = true, comment = "昵称")
+    private String nickname;
+
     @Column(type = "varchar", length = 255, notNull = true, comment = "密码")
     private String password;
 
