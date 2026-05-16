@@ -8,6 +8,7 @@ import com.slz.demo.common.util.JwtUtil;
 import com.slz.demo.common.util.PasswordUtil;
 import com.slz.demo.common.util.UserContext;
 import com.slz.demo.pojo.ao.RoleAO;
+import com.slz.demo.pojo.dto.UserDTO;
 import com.slz.demo.pojo.dto.LoginDTO;
 import com.slz.demo.pojo.dto.RegisterDTO;
 import com.slz.demo.pojo.entity.User;
@@ -17,6 +18,8 @@ import com.slz.demo.server.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 /**
  * 用户 Service 实现
@@ -68,6 +71,32 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         UserVO vo = new UserVO();
         BeanUtils.copyProperties(user, vo);
+        if (user.getAvatar() != null) {
+            vo.setAvatar("/upload/" + user.getAvatar());
+        }
         return vo;
+    }
+
+    @Override
+    public void update(UserDTO dto) {
+        RoleAO ao = UserContext.get();
+        if (!ao.getUserId().equals(dto.getId())) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+        User user = getById(dto.getId());
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        if (dto.getAvatar() != null) {
+            user.setAvatar(dto.getAvatar());
+        }
+        if (dto.getNickname() != null) {
+            user.setNickname(dto.getNickname());
+        }
+        if (dto.getEmail() != null) {
+            user.setEmail(dto.getEmail());
+        }
+        user.setUpdateTime(LocalDateTime.now());
+        updateById(user);
     }
 }

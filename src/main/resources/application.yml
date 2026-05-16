@@ -8,6 +8,10 @@ spring:
     url: jdbc:mysql://${spring.datasource.host}:${spring.datasource.port}/${spring.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
     username: ${spring.datasource.username}
     password: ${spring.datasource.password}
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
 
 server:
   port: 8080
@@ -31,3 +35,7 @@ auto-table:
 jwt:
   secret: ${jwt.secret}
   expire: ${jwt.expire}
+
+upload:
+  path: ${upload.path}
+  max-image-size: ${upload.max-image-size}

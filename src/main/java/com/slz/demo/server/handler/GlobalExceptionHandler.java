@@ -7,6 +7,7 @@ import com.slz.demo.common.result.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -49,6 +50,15 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining(", "));
         log.warn("参数校验异常: {}", msg);
         return Result.error(400, msg);
+    }
+
+    /**
+     * JSON格式异常
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public Result<String> handleHttpMessageNotReadable(HttpMessageNotReadableException e) {
+        log.warn("请求格式异常: {}", e.getMessage());
+        return Result.error(400, "请求体格式错误，请检查JSON格式");
     }
 
     /**

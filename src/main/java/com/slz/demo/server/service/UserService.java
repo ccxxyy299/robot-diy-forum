@@ -6,6 +6,8 @@ import com.slz.demo.pojo.dto.RegisterDTO;
 import com.slz.demo.pojo.entity.User;
 import com.slz.demo.pojo.vo.UserVO;
 
+import com.slz.demo.pojo.dto.UserDTO;
+
 /**
  * 用户 Service
  */
@@ -29,4 +31,10 @@ public interface UserService extends IService<User> {
      * @return 用户信息
      */
     UserVO getCurrentUser();
+
+    /**
+     * 修改用户资料
+     * @param dto 修改参数
+     */
+    void update(UserDTO dto);
 }

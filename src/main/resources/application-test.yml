@@ -1,9 +1,9 @@
 spring:
   datasource:
-    host: localhost
+    host: 106.53.208.13
     port: 3306
     database: robot_diy_forum
-    username: user
+    username: user_rdf
     password: yyy299
 
 jwt:
@@ -11,5 +11,5 @@ jwt:
   expire: 86400000
 
 upload:
-  path: D:\JavaProjects\robot-diy-forum_file
+  path: /ProjectFile/RobotDiyForumFile
   max-image-size: 5MB
