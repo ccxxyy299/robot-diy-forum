@@ -5,7 +5,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.tangzc.mpe.autotable.annotation.Column;
 import com.tangzc.mpe.autotable.annotation.ColumnId;
 import com.tangzc.mpe.autotable.annotation.Table;
-import com.tangzc.mpe.autotable.annotation.UniqueIndex;
+import com.tangzc.autotable.annotation.Index;
+import com.tangzc.autotable.annotation.enums.IndexTypeEnum;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -21,7 +22,7 @@ public class ForumTag {
     @ColumnId(mode = IdType.AUTO, type = "bigint", comment = "标签ID")
     private Long id;
 
-    @UniqueIndex(name = "uk_forum_tag_name", comment = "标签名称唯一")
+    @Index(name = "idx_forum_tag_name", type = IndexTypeEnum.NORMAL, comment = "标签名称索引")
     @Column(type = "varchar", length = 50, notNull = true, comment = "标签名称")
     private String name;
 

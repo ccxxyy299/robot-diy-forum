@@ -32,6 +32,8 @@ public class ForumCategoryController {
 
     /**
      * 新增分类
+     * @param dto 分类信息
+     * @return 结果
      */
     @PostMapping
     public Result<String> add(@Valid @RequestBody CategoryDTO dto) {
@@ -41,6 +43,9 @@ public class ForumCategoryController {
 
     /**
      * 编辑分类
+     * @param id 分类ID
+     * @param dto 分类信息
+     * @return 结果
      */
     @PutMapping("/{id}")
     public Result<String> edit(@PathVariable Long id, @Valid @RequestBody CategoryDTO dto) {
@@ -50,6 +55,8 @@ public class ForumCategoryController {
 
     /**
      * 删除分类
+     * @param id 分类ID
+     * @return 结果
      */
     @DeleteMapping("/{id}")
     public Result<String> remove(@PathVariable Long id) {
@@ -59,6 +66,7 @@ public class ForumCategoryController {
 
     /**
      * 查询所有父分类
+     * @return 父分类列表
      */
     @GetMapping("/parents")
     public Result<List<CategoryVO>> listParents() {
@@ -67,6 +75,8 @@ public class ForumCategoryController {
 
     /**
      * 通过父分类ID查询子分类
+     * @param parentId 父分类ID
+     * @return 分类列表
      */
     @GetMapping("/children/{parentId}")
     public Result<List<CategoryVO>> listChildren(@PathVariable Long parentId) {
@@ -75,6 +85,8 @@ public class ForumCategoryController {
 
     /**
      * 根据分类名称模糊搜索
+     * @param name 分类名称
+     * @return 分类列表
      */
     @GetMapping("/search")
     public Result<List<CategoryVO>> searchByName(@RequestParam String name) {
@@ -83,6 +95,7 @@ public class ForumCategoryController {
 
     /**
      * 查询所有分类
+     * @return 所有分类
      */
     @GetMapping("/selectAll")
     public Result<List<CategoryTreeVO>> selectAll() {
