@@ -12,6 +12,7 @@ import com.slz.demo.pojo.entity.ForumCategory;
 import com.slz.demo.pojo.entity.ForumTag;
 import com.slz.demo.pojo.entity.ForumTopic;
 import com.slz.demo.pojo.entity.ForumTopicTag;
+import com.slz.demo.pojo.entity.User;
 import com.slz.demo.pojo.vo.TagVO;
 import com.slz.demo.pojo.vo.TopicVO;
 import com.slz.demo.server.mapper.ForumTopicMapper;
@@ -19,6 +20,7 @@ import com.slz.demo.server.mapper.ForumTopicTagMapper;
 import com.slz.demo.server.service.ForumCategoryService;
 import com.slz.demo.server.service.ForumTagService;
 import com.slz.demo.server.service.ForumTopicService;
+import com.slz.demo.server.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -27,6 +29,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 主题帖 Service 实现
@@ -38,6 +43,7 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
     private final ForumTopicTagMapper topicTagMapper;
     private final ForumCategoryService categoryService;
     private final ForumTagService tagService;
+    private final UserService userService;
 
     @Override
     @Transactional
@@ -148,7 +154,7 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
                 .eq(ForumTopic::getStatus, 1)
                 .orderByDesc(ForumTopic::getCreateTime)
                 .list();
-        return list.stream().map(this::toVO).toList();
+        return toVOList(list);
     }
 
     @Override
@@ -159,7 +165,11 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
 
         // 处理分类条件
         List<Long> categoryIds = resolveCategoryIds(queryDTO);
-        if (categoryIds != null && !categoryIds.isEmpty()) {
+        if (categoryIds != null) {
+            if (categoryIds.isEmpty()) {
+                // 没有符合条件的分类，返回空页
+                return new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
+            }
             wrapper.in(ForumTopic::getCategoryId, categoryIds);
         }
 
@@ -178,7 +188,7 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
 
         // 转换为VO分页
         Page<TopicVO> voPage = new Page<>(topicPage.getCurrent(), topicPage.getSize(), topicPage.getTotal());
-        voPage.setRecords(topicPage.getRecords().stream().map(this::toVO).toList());
+        voPage.setRecords(toVOList(topicPage.getRecords()));
         return voPage;
     }
 
@@ -186,9 +196,11 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
      * 解析分类ID列表
      * 如果传了categoryId，直接使用
      * 如果只传了parentId，查询该父分类下所有子分类ID
+     * 返回 null 表示不限制分类（查询全部）
+     * 返回空列表表示没有符合条件的分类（查询结果为空）
      */
     private List<Long> resolveCategoryIds(TopicQueryDTO queryDTO) {
-        // 如果传了categoryId（子分类），优先使用
+        // 如果传了categoryId（子分类），直接使用
         if (queryDTO.getCategoryId() != null) {
             return List.of(queryDTO.getCategoryId());
         }
@@ -199,34 +211,109 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
                     .eq(ForumCategory::getParentId, queryDTO.getParentId())
                     .list();
             if (children.isEmpty()) {
-                return null;
+                // 没有子分类，返回空列表（查询结果为空）
+                return List.of();
             }
             return children.stream().map(ForumCategory::getId).toList();
         }
 
-        // 都没传，则查询全部
+        // 都没传，则查询全部（不限制分类）
         return null;
     }
 
-    private TopicVO toVO(ForumTopic entity) {
+    /**
+     * 批量转换为VO，一次性查询所有关联数据避免N+1问题
+     */
+    private List<TopicVO> toVOList(List<ForumTopic> entities) {
+        if (entities.isEmpty()) {
+            return List.of();
+        }
+
+        // 批量查询主题帖创建者用户
+        Set<Long> topicCreatorIds = entities.stream()
+                .map(ForumTopic::getCreatorId)
+                .collect(Collectors.toSet());
+
+        // 批量查询分类
+        Set<Long> categoryIds = entities.stream()
+                .map(ForumTopic::getCategoryId)
+                .collect(Collectors.toSet());
+        Map<Long, ForumCategory> categoryMap = categoryService.listByIds(categoryIds)
+                .stream()
+                .collect(Collectors.toMap(ForumCategory::getId, c -> c));
+
+        // 批量查询所有主题帖关联的标签ID
+        Map<Long, List<Long>> topicTagIdsMap = new java.util.HashMap<>();
+        Set<Long> allTagIds = new java.util.HashSet<>();
+        for (ForumTopic entity : entities) {
+            List<Long> tagIds = topicTagMapper.selectTagIdsByTopicId(entity.getId());
+            if (tagIds != null && !tagIds.isEmpty()) {
+                topicTagIdsMap.put(entity.getId(), tagIds);
+                allTagIds.addAll(tagIds);
+            }
+        }
+
+        // 批量查询标签实体（如果标签ID为空则跳过查询）
+        Map<Long, ForumTag> tagMap = allTagIds.isEmpty()
+                ? Map.of()
+                : tagService.listByIds(allTagIds).stream()
+                        .collect(Collectors.toMap(ForumTag::getId, t -> t));
+
+        // 批量查询标签创建者用户
+        Set<Long> tagCreatorIds = tagMap.values().stream()
+                .map(ForumTag::getCreatorId)
+                .collect(Collectors.toSet());
+
+        // 合并所有用户ID并批量查询
+        Set<Long> allUserIds = new java.util.HashSet<>();
+        allUserIds.addAll(topicCreatorIds);
+        allUserIds.addAll(tagCreatorIds);
+        Map<Long, User> userMap = allUserIds.isEmpty()
+                ? Map.of()
+                : userService.listByIds(allUserIds).stream()
+                        .collect(Collectors.toMap(User::getId, u -> u));
+
+        return entities.stream()
+                .map(entity -> toVO(entity, userMap, categoryMap, tagMap, topicTagIdsMap))
+                .toList();
+    }
+
+    private TopicVO toVO(ForumTopic entity, 
+                         Map<Long, User> userMap, 
+                         Map<Long, ForumCategory> categoryMap,
+                         Map<Long, ForumTag> tagMap,
+                         Map<Long, List<Long>> topicTagIdsMap) {
         TopicVO vo = new TopicVO();
         BeanUtils.copyProperties(entity, vo);
 
+        // 设置创建者昵称
+        User user = userMap.get(entity.getCreatorId());
+        if (user != null) {
+            vo.setCreatorNickname(user.getNickname());
+        }
+
         // 设置分类名称
-        ForumCategory category = categoryService.getById(entity.getCategoryId());
+        ForumCategory category = categoryMap.get(entity.getCategoryId());
         if (category != null) {
             vo.setCategoryName(category.getName());
         }
 
-        // 设置标签列表
-        List<Long> tagIds = topicTagMapper.selectTagIdsByTopicId(entity.getId());
+        // 设置标签列表（使用预先查询的标签ID映射）
+        List<Long> tagIds = topicTagIdsMap.get(entity.getId());
         if (tagIds != null && !tagIds.isEmpty()) {
             List<TagVO> tags = new ArrayList<>();
             for (Long tagId : tagIds) {
-                ForumTag tag = tagService.getById(tagId);
+                ForumTag tag = tagMap.get(tagId);
                 if (tag != null) {
                     TagVO tagVO = new TagVO();
                     BeanUtils.copyProperties(tag, tagVO);
+
+                    // 设置标签创建者昵称
+                    User tagCreator = userMap.get(tag.getCreatorId());
+                    if (tagCreator != null) {
+                        tagVO.setCreatorNickname(tagCreator.getNickname());
+                    }
+
                     tags.add(tagVO);
                 }
             }

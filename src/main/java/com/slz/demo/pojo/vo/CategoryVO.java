@@ -21,6 +21,8 @@ public class CategoryVO {
 
     private Long creatorId;
 
+    private String creatorNickname;
+
     private LocalDateTime createTime;
 
     private LocalDateTime updateTime;

@@ -6,20 +6,29 @@ import com.slz.demo.common.exception.BusinessException;
 import com.slz.demo.common.util.UserContext;
 import com.slz.demo.pojo.dto.TagDTO;
 import com.slz.demo.pojo.entity.ForumTag;
+import com.slz.demo.pojo.entity.User;
 import com.slz.demo.pojo.vo.TagVO;
 import com.slz.demo.server.mapper.ForumTagMapper;
 import com.slz.demo.server.service.ForumTagService;
+import com.slz.demo.server.service.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 标签 Service 实现
  */
 @Service
+@RequiredArgsConstructor
 public class ForumTagServiceImpl extends ServiceImpl<ForumTagMapper, ForumTag> implements ForumTagService {
+
+    private final UserService userService;
 
     @Override
     public void add(TagDTO dto) {
@@ -66,7 +75,7 @@ public class ForumTagServiceImpl extends ServiceImpl<ForumTagMapper, ForumTag> i
         List<ForumTag> list = lambdaQuery()
                 .orderByDesc(ForumTag::getCreateTime)
                 .list();
-        return list.stream().map(this::toVO).toList();
+        return toVOList(list);
     }
 
     @Override
@@ -75,12 +84,37 @@ public class ForumTagServiceImpl extends ServiceImpl<ForumTagMapper, ForumTag> i
                 .like(ForumTag::getName, name)
                 .orderByDesc(ForumTag::getCreateTime)
                 .list();
-        return list.stream().map(this::toVO).toList();
+        return toVOList(list);
     }
 
-    private TagVO toVO(ForumTag entity) {
+    /**
+     * 批量转换为VO，一次性查询用户信息避免N+1问题
+     */
+    private List<TagVO> toVOList(List<ForumTag> entities) {
+        if (entities.isEmpty()) {
+            return List.of();
+        }
+
+        // 批量查询用户
+        Set<Long> creatorIds = entities.stream()
+                .map(ForumTag::getCreatorId)
+                .collect(Collectors.toSet());
+        Map<Long, User> userMap = userService.listByIds(creatorIds)
+                .stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        return entities.stream().map(entity -> toVO(entity, userMap)).toList();
+    }
+
+    private TagVO toVO(ForumTag entity, Map<Long, User> userMap) {
         TagVO vo = new TagVO();
         BeanUtils.copyProperties(entity, vo);
+
+        User user = userMap.get(entity.getCreatorId());
+        if (user != null) {
+            vo.setCreatorNickname(user.getNickname());
+        }
+
         return vo;
     }
 }

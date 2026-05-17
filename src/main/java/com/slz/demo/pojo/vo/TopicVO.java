@@ -19,6 +19,8 @@ public class TopicVO {
 
     private Long creatorId;
 
+    private String creatorNickname;
+
     private String title;
 
     private String content;

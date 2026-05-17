@@ -6,10 +6,13 @@ import com.slz.demo.common.exception.BusinessException;
 import com.slz.demo.common.util.UserContext;
 import com.slz.demo.pojo.dto.CategoryDTO;
 import com.slz.demo.pojo.entity.ForumCategory;
+import com.slz.demo.pojo.entity.User;
 import com.slz.demo.pojo.vo.CategoryTreeVO;
 import com.slz.demo.pojo.vo.CategoryVO;
 import com.slz.demo.server.mapper.ForumCategoryMapper;
 import com.slz.demo.server.service.ForumCategoryService;
+import com.slz.demo.server.service.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
@@ -17,13 +20,17 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * 分类 Service 实现
  */
 @Service
+@RequiredArgsConstructor
 public class ForumCategoryServiceImpl extends ServiceImpl<ForumCategoryMapper, ForumCategory> implements ForumCategoryService {
+
+    private final UserService userService;
 
     @Override
     public void add(CategoryDTO dto) {
@@ -101,7 +108,15 @@ public class ForumCategoryServiceImpl extends ServiceImpl<ForumCategoryMapper, F
                 .orderByAsc(ForumCategory::getId)
                 .list();
 
-        List<CategoryTreeVO> voList = all.stream().map(this::toTreeVO).toList();
+        // 批量查询用户
+        Set<Long> creatorIds = all.stream()
+                .map(ForumCategory::getCreatorId)
+                .collect(Collectors.toSet());
+        Map<Long, User> userMap = userService.listByIds(creatorIds)
+                .stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        List<CategoryTreeVO> voList = all.stream().map(e -> toTreeVO(e, userMap)).toList();
         // 按 parentId 分组
         Map<Long, List<CategoryTreeVO>> childrenMap = voList.stream()
                 .collect(Collectors.groupingBy(CategoryTreeVO::getParentId));
@@ -122,9 +137,15 @@ public class ForumCategoryServiceImpl extends ServiceImpl<ForumCategoryMapper, F
         }
     }
 
-    private CategoryTreeVO toTreeVO(ForumCategory entity) {
+    private CategoryTreeVO toTreeVO(ForumCategory entity, Map<Long, User> userMap) {
         CategoryTreeVO vo = new CategoryTreeVO();
         BeanUtils.copyProperties(entity, vo);
+
+        User user = userMap.get(entity.getCreatorId());
+        if (user != null) {
+            vo.setCreatorNickname(user.getNickname());
+        }
+
         return vo;
     }
 
@@ -134,7 +155,7 @@ public class ForumCategoryServiceImpl extends ServiceImpl<ForumCategoryMapper, F
                 .eq(ForumCategory::getParentId, 0L)
                 .orderByDesc(ForumCategory::getCreateTime)
                 .list();
-        return list.stream().map(this::toVO).toList();
+        return toVOList(list);
     }
 
     @Override
@@ -143,7 +164,7 @@ public class ForumCategoryServiceImpl extends ServiceImpl<ForumCategoryMapper, F
                 .eq(ForumCategory::getParentId, parentId)
                 .orderByDesc(ForumCategory::getCreateTime)
                 .list();
-        return list.stream().map(this::toVO).toList();
+        return toVOList(list);
     }
 
     @Override
@@ -152,12 +173,36 @@ public class ForumCategoryServiceImpl extends ServiceImpl<ForumCategoryMapper, F
                 .like(ForumCategory::getName, name)
                 .orderByDesc(ForumCategory::getCreateTime)
                 .list();
-        return list.stream().map(this::toVO).toList();
+        return toVOList(list);
     }
 
-    private CategoryVO toVO(ForumCategory entity) {
+    /**
+     * 批量转换为VO，一次性查询用户信息避免N+1问题
+     */
+    private List<CategoryVO> toVOList(List<ForumCategory> entities) {
+        if (entities.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> creatorIds = entities.stream()
+                .map(ForumCategory::getCreatorId)
+                .collect(Collectors.toSet());
+        Map<Long, User> userMap = userService.listByIds(creatorIds)
+                .stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        return entities.stream().map(e -> toVO(e, userMap)).toList();
+    }
+
+    private CategoryVO toVO(ForumCategory entity, Map<Long, User> userMap) {
         CategoryVO vo = new CategoryVO();
         BeanUtils.copyProperties(entity, vo);
+
+        User user = userMap.get(entity.getCreatorId());
+        if (user != null) {
+            vo.setCreatorNickname(user.getNickname());
+        }
+
         return vo;
     }
 }
