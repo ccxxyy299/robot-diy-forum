@@ -26,6 +26,7 @@ public enum ErrorCode {
     CATEGORY_PARENT_SELF(400, "父分类不能是该分类自身"),
     TAG_NOT_FOUND(400, "标签不存在"),
     TAG_NAME_EXISTS(400, "标签名称已存在"),
+    TOPIC_NOT_FOUND(400, "主题帖不存在"),
     INVALID_STATUS(400, "状态值只能是0或1"),
     FILE_EMPTY(400, "上传文件不能为空"),
     FILE_TOO_LARGE(400, "文件大小不能超过5MB"),

@@ -15,36 +15,46 @@ public interface ForumCategoryService extends IService<ForumCategory> {
 
     /**
      * 新增分类
+     * @param dto 分类信息
      */
     void add(CategoryDTO dto);
 
     /**
      * 编辑分类
+     * @param id 分类ID
+     * @param dto 分类信息
      */
     void edit(Long id, CategoryDTO dto);
 
     /**
      * 删除分类（有子分类时拒绝删除）
+     * @param id 分类ID
      */
     void remove(Long id);
 
     /**
      * 查询所有分类（树形结构）
+     * @return 分类列表
      */
     List<CategoryTreeVO> selectAll();
 
     /**
      * 查询所有父分类（parent_id=0）
+     * @return 分类列表
      */
     List<CategoryVO> listParents();
 
     /**
      * 通过父分类ID查询子分类
+     * @param parentId 父分类ID
+     * @return 分类列表
      */
     List<CategoryVO> listChildren(Long parentId);
 
     /**
      * 根据分类名称模糊搜索
+     * @param name 分类名称
+     * @return 分类列表
      */
     List<CategoryVO> searchByName(String name);
 }
