@@ -69,6 +69,15 @@ public class ForumTagServiceImpl extends ServiceImpl<ForumTagMapper, ForumTag> i
         return list.stream().map(this::toVO).toList();
     }
 
+    @Override
+    public List<TagVO> searchByName(String name) {
+        List<ForumTag> list = lambdaQuery()
+                .like(ForumTag::getName, name)
+                .orderByDesc(ForumTag::getCreateTime)
+                .list();
+        return list.stream().map(this::toVO).toList();
+    }
+
     private TagVO toVO(ForumTag entity) {
         TagVO vo = new TagVO();
         BeanUtils.copyProperties(entity, vo);

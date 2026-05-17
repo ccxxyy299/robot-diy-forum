@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -68,5 +69,15 @@ public class ForumTagController {
     @GetMapping("/selectAll")
     public Result<List<TagVO>> selectAll() {
         return Result.success(forumTagService.selectAll());
+    }
+
+    /**
+     * 根据标签名称模糊搜索
+     * @param name 标签名称
+     * @return 匹配的标签列表
+     */
+    @GetMapping("/search")
+    public Result<List<TagVO>> searchByName(@RequestParam String name) {
+        return Result.success(forumTagService.searchByName(name));
     }
 }
