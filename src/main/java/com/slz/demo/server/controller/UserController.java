@@ -1,16 +1,12 @@
 package com.slz.demo.server.controller;
 
 import com.slz.demo.common.result.Result;
-import com.slz.demo.common.util.FileUtil;
 import com.slz.demo.pojo.dto.LoginDTO;
 import com.slz.demo.pojo.dto.RegisterDTO;
-import com.slz.demo.pojo.dto.UserDTO;
 import com.slz.demo.pojo.vo.UserVO;
 import com.slz.demo.server.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -29,12 +25,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserController {
 
     private final UserService userService;
-
-    @Value("${upload.path}")
-    private String uploadPath;
-
-    @Value("${upload.max-image-size}")
-    private DataSize maxImageSize;
 
     /**
      * 用户注册
@@ -68,8 +58,6 @@ public class UserController {
 
     /**
      * 修改用户信息
-     * @param id
-     * @param avatar
      * @param nickname
      * @param email
      * @return
@@ -79,14 +67,7 @@ public class UserController {
                                  @RequestParam(value = "avatar", required = false) MultipartFile avatar,
                                  @RequestParam(value = "nickname", required = false) String nickname,
                                  @RequestParam(value = "email", required = false) String email) {
-        UserDTO dto = new UserDTO();
-        dto.setId(id);
-        dto.setNickname(nickname);
-        dto.setEmail(email);
-        if (avatar != null && !avatar.isEmpty()) {
-            dto.setAvatar(FileUtil.saveImage(avatar, uploadPath, maxImageSize.toBytes()));
-        }
-        userService.update(dto);
+        userService.update(id,avatar, nickname, email);
         return Result.success("修改成功");
     }
 }

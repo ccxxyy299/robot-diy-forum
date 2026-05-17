@@ -5,8 +5,7 @@ import com.slz.demo.pojo.dto.LoginDTO;
 import com.slz.demo.pojo.dto.RegisterDTO;
 import com.slz.demo.pojo.entity.User;
 import com.slz.demo.pojo.vo.UserVO;
-
-import com.slz.demo.pojo.dto.UserDTO;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 用户 Service
@@ -34,7 +33,10 @@ public interface UserService extends IService<User> {
 
     /**
      * 修改用户资料
-     * @param dto 修改参数
+     * @param id 用户ID
+     * @param avatar 新头像文件（可为null表示不修改）
+     * @param nickname 新昵称（可为null或空表示不修改）
+     * @param email 新邮箱（可为null或空表示不修改）
      */
-    void update(UserDTO dto);
+    void update(Long id, MultipartFile avatar, String nickname, String email);
 }
