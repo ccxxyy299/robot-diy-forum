@@ -3,6 +3,7 @@ package com.slz.demo.server.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.slz.demo.server.constant.ForumConstants;
 import com.slz.demo.common.enumeration.ErrorCode;
 import com.slz.demo.common.exception.BusinessException;
 import com.slz.demo.common.util.UserContext;
@@ -170,7 +171,7 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
 
         // 已删除回复显示占位内容
         if (entity.getIsDeleted() == 1) {
-            vo.setContent("该回复已被删除");
+            vo.setContent(ForumConstants.DELETED_REPLY_CONTENT);
         }
 
         // 设置创建者昵称
