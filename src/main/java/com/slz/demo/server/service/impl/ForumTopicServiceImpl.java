@@ -192,6 +192,74 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
         return voPage;
     }
 
+    @Override
+    public TopicVO detail(Long id) {
+        ForumTopic topic = getById(id);
+        if (topic == null) {
+            throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
+        }
+
+        // 增加浏览数
+        topic.setViewCount(topic.getViewCount() + 1);
+        updateById(topic);
+
+        // 查询分类
+        ForumCategory category = categoryService.getById(topic.getCategoryId());
+
+        // 查询关联的标签
+        List<Long> tagIds = topicTagMapper.selectTagIdsByTopicId(id);
+        List<TagVO> tags = new ArrayList<>();
+        Map<Long, ForumTag> tagMap = Map.of();
+        if (tagIds != null && !tagIds.isEmpty()) {
+            tagMap = tagService.listByIds(tagIds)
+                    .stream()
+                    .collect(Collectors.toMap(ForumTag::getId, t -> t));
+
+            for (Long tagId : tagIds) {
+                ForumTag tag = tagMap.get(tagId);
+                if (tag != null) {
+                    TagVO tagVO = new TagVO();
+                    BeanUtils.copyProperties(tag, tagVO);
+                    tags.add(tagVO);
+                }
+            }
+        }
+
+        // 合并所有用户ID，批量查询
+        Set<Long> userIds = new java.util.HashSet<>();
+        userIds.add(topic.getCreatorId());
+        tagMap.values().forEach(tag -> userIds.add(tag.getCreatorId()));
+        Map<Long, User> userMap = userIds.isEmpty()
+                ? Map.of()
+                : userService.listByIds(userIds).stream()
+                        .collect(Collectors.toMap(User::getId, u -> u));
+
+        // 组装VO
+        TopicVO vo = new TopicVO();
+        BeanUtils.copyProperties(topic, vo);
+
+        User creator = userMap.get(topic.getCreatorId());
+        if (creator != null) {
+            vo.setCreatorNickname(creator.getNickname());
+        }
+
+        if (category != null) {
+            vo.setCategoryName(category.getName());
+        }
+
+        // 填充标签创建者昵称
+        for (TagVO tagVO : tags) {
+            User tagCreator = userMap.get(tagVO.getCreatorId());
+            if (tagCreator != null) {
+                tagVO.setCreatorNickname(tagCreator.getNickname());
+            }
+        }
+
+        vo.setTags(tags);
+
+        return vo;
+    }
+
     /**
      * 解析分类ID列表
      * 如果传了categoryId，直接使用

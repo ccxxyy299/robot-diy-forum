@@ -45,4 +45,11 @@ public interface ForumTopicService extends IService<ForumTopic> {
      * @return 分页查询结果
      */
     Page<TopicVO> page(TopicQueryDTO queryDTO);
+
+    /**
+     * 查询主题帖详情
+     * @param id 主题帖ID
+     * @return 主题帖详情
+     */
+    TopicVO detail(Long id);
 }

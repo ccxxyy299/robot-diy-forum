@@ -82,4 +82,14 @@ public class ForumTopicController {
     public Result<Page<TopicVO>> page(@RequestBody TopicQueryDTO queryDTO) {
         return Result.success(forumTopicService.page(queryDTO));
     }
+
+    /**
+     * 查询主题帖详情
+     * @param id 主题帖ID
+     * @return 主题帖详情
+     */
+    @GetMapping("/detail/{id}")
+    public Result<TopicVO> detail(@PathVariable Long id) {
+        return Result.success(forumTopicService.detail(id));
+    }
 }
