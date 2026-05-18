@@ -31,4 +31,10 @@ public interface ForumTopicTagMapper extends BaseMapper<ForumTopicTag> {
      */
     @Select("DELETE FROM forum_topic_tag WHERE topic_id = #{topicId}")
     void deleteByTopicId(@Param("topicId") Long topicId);
+
+    /**
+     * 删除标签的所有主题帖关联
+     */
+    @Select("DELETE FROM forum_topic_tag WHERE tag_id = #{tagId}")
+    void deleteByTagId(@Param("tagId") Long tagId);
 }

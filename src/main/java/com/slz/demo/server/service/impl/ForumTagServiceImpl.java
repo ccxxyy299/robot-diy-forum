@@ -9,11 +9,13 @@ import com.slz.demo.pojo.entity.ForumTag;
 import com.slz.demo.pojo.entity.User;
 import com.slz.demo.pojo.vo.TagVO;
 import com.slz.demo.server.mapper.ForumTagMapper;
+import com.slz.demo.server.mapper.ForumTopicTagMapper;
 import com.slz.demo.server.service.ForumTagService;
 import com.slz.demo.server.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,6 +31,7 @@ import java.util.stream.Collectors;
 public class ForumTagServiceImpl extends ServiceImpl<ForumTagMapper, ForumTag> implements ForumTagService {
 
     private final UserService userService;
+    private final ForumTopicTagMapper topicTagMapper;
 
     @Override
     public void add(TagDTO dto) {
@@ -44,11 +47,14 @@ public class ForumTagServiceImpl extends ServiceImpl<ForumTagMapper, ForumTag> i
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
         ForumTag tag = getById(id);
         if (tag == null) {
             throw new BusinessException(ErrorCode.TAG_NOT_FOUND);
         }
+        // 级联清理关联记录
+        topicTagMapper.deleteByTagId(id);
         removeById(id);
     }
 
