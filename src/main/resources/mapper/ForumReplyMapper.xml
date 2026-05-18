@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.slz.demo.server.mapper.ForumReplyMapper">
+
+
+    <select id="selectByIdWithDeleted" resultType="com.slz.demo.pojo.entity.ForumReply">
+        SELECT * FROM forum_reply WHERE id = #{id}
+    </select>
+
+    <!-- 分页查询主题帖下的顶层回复 -->
+    <!-- 条件：未删除 OR (已删除且有未删除的子回复) -->
+    <!-- 已删除且有子回复的显示占位，已删除且无子回复的过滤掉 -->
+    <select id="selectTopReplyPage" resultType="com.slz.demo.pojo.entity.ForumReply">
+        SELECT r.*
+        FROM forum_reply r
+        WHERE r.topic_id = #{topicId}
+          AND r.parent_reply_id = 0
+          AND (
+              r.is_deleted = 0
+              OR (
+                  r.is_deleted = 1
+                  AND EXISTS (
+                      SELECT 1
+                      FROM forum_reply c
+                      WHERE c.parent_reply_id = r.id
+                        AND c.is_deleted = 0
+                  )
+              )
+          )
+        ORDER BY r.create_time DESC
+    </select>
+
+    <!-- 分页查询某父回复下的子回复（楼中楼） -->
+    <!-- 条件：未删除 OR (已删除且有未删除的子回复) -->
+    <select id="selectChildReplyPage" resultType="com.slz.demo.pojo.entity.ForumReply">
+        SELECT r.*
+        FROM forum_reply r
+        WHERE r.parent_reply_id = #{parentReplyId}
+          AND (
+              r.is_deleted = 0
+              OR (
+                  r.is_deleted = 1
+                  AND EXISTS (
+                      SELECT 1
+                      FROM forum_reply c
+                      WHERE c.parent_reply_id = r.id
+                        AND c.is_deleted = 0
+                  )
+              )
+          )
+        ORDER BY r.create_time ASC
+    </select>
+
+</mapper>
