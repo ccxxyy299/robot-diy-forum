@@ -1,0 +1,32 @@
+name: 飞书通知
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    types: [opened, synchronize, closed]
+    branches: [master]
+
+jobs:
+  send-feishu-notification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 发送飞书通知
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          # push 事件
+          PUSH_COMMITTER: ${{ github.event.pusher.name }}
+          PUSH_COMMIT_MSG: ${{ github.event.head_commit.message }}
+          # pull_request 事件
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_USER: ${{ github.event.pull_request.user.login }}
+          PR_ACTION: ${{ github.event.action }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+        run: |
+          chmod +x scripts/feishu-notification.sh
+          ./scripts/feishu-notification.sh
