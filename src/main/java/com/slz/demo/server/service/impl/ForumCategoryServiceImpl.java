@@ -121,9 +121,11 @@ public class ForumCategoryServiceImpl extends ServiceImpl<ForumCategoryMapper, F
         Set<Long> creatorIds = all.stream()
                 .map(ForumCategory::getCreatorId)
                 .collect(Collectors.toSet());
-        Map<Long, User> userMap = userService.listByIds(creatorIds)
-                .stream()
-                .collect(Collectors.toMap(User::getId, u -> u));
+        Map<Long, User> userMap = creatorIds.isEmpty()
+                ? Map.of()
+                : userService.listByIds(creatorIds)
+                        .stream()
+                        .collect(Collectors.toMap(User::getId, u -> u));
 
         List<CategoryTreeVO> voList = all.stream().map(e -> toTreeVO(e, userMap)).toList();
         // 按 parentId 分组
