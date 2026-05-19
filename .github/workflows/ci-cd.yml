@@ -1,0 +1,87 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Build and test
+        run: mvn clean test
+
+  package:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Package application
+        run: mvn package -DskipTests
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: target/robot-diy-forum-0.0.1-SNAPSHOT.jar
+          retention-days: 1
+
+  deploy:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            APP_DIR="/WorkPlace/robot-diy-forum"
+            JAR_FILE="robot-diy-forum-0.0.1-SNAPSHOT.jar"
+            PORT=8080
+
+            # Stop old process
+            kill $(lsof -t -i:$PORT) 2>/dev/null || true
+            sleep 2
+
+            # Upload new jar
+            mkdir -p $APP_DIR
+            cat > $APP_DIR/$JAR_FILE
+
+            # Start application with .env
+            cd $APP_DIR
+            set -a
+            source $APP_DIR/.env
+            set +a
+            nohup java -jar $JAR_FILE > app.log 2>&1 &
+            echo "Deployment completed"
+        stdin: true
