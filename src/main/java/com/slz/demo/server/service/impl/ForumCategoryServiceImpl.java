@@ -6,11 +6,13 @@ import com.slz.demo.common.exception.BusinessException;
 import com.slz.demo.common.util.UserContext;
 import com.slz.demo.pojo.dto.CategoryDTO;
 import com.slz.demo.pojo.entity.ForumCategory;
+import com.slz.demo.pojo.entity.ForumTopic;
 import com.slz.demo.pojo.entity.User;
 import com.slz.demo.pojo.vo.CategoryTreeVO;
 import com.slz.demo.pojo.vo.CategoryVO;
 import com.slz.demo.server.mapper.ForumCategoryMapper;
 import com.slz.demo.server.service.ForumCategoryService;
+import com.slz.demo.server.service.ForumTopicService;
 import com.slz.demo.server.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 public class ForumCategoryServiceImpl extends ServiceImpl<ForumCategoryMapper, ForumCategory> implements ForumCategoryService {
 
     private final UserService userService;
+    private final ForumTopicService forumTopicService;
 
     @Override
     public void add(CategoryDTO dto) {
@@ -97,6 +100,9 @@ public class ForumCategoryServiceImpl extends ServiceImpl<ForumCategoryMapper, F
         }
         if (lambdaQuery().eq(ForumCategory::getParentId, id).exists()) {
             throw new BusinessException(ErrorCode.CATEGORY_HAS_CHILDREN);
+        }
+        if (forumTopicService.lambdaQuery().eq(ForumTopic::getCategoryId, id).exists()) {
+            throw new BusinessException(ErrorCode.CATEGORY_HAS_TOPICS);
         }
         removeById(id);
     }

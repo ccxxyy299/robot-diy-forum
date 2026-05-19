@@ -21,6 +21,7 @@ public enum ErrorCode {
     CATEGORY_NOT_FOUND(400, "分类不存在"),
     CATEGORY_NAME_DUPLICATE(400, "同级别下分类名称已存在"),
     CATEGORY_HAS_CHILDREN(400, "该分类下有子分类，无法删除"),
+    CATEGORY_HAS_TOPICS(400, "该分类下有主题帖，无法删除"),
     CATEGORY_MAX_DEPTH(400, "分类最多支持两级，父分类必须是顶级分类"),
     PARENT_ID_NULL(400, "父分类ID不能为空"),
     CATEGORY_PARENT_SELF(400, "父分类不能是该分类自身"),
