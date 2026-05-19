@@ -3,7 +3,8 @@
 # 判断事件类型
 if [ "$GITHUB_EVENT_NAME" = "push" ]; then
   TITLE="GitHub 代码推送 - ${GITHUB_REF_NAME}"
-  CONTENT="推送人: ${PUSH_COMMITTER}\n提交信息: ${PUSH_COMMIT_MSG}"
+  CONTENT="推送人: ${PUSH_COMMITTER}
+提交信息: ${PUSH_COMMIT_MSG}"
 elif [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
   case "$PR_ACTION" in
     opened)
@@ -20,14 +21,21 @@ elif [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
       fi
       ;;
   esac
-  CONTENT="发起人: ${PR_USER}\n标题: ${PR_TITLE}"
+  CONTENT="发起人: ${PR_USER}
+标题: ${PR_TITLE}"
 else
   exit 0
 fi
 
+# 使用 jq 安全构建 JSON，自动转义换行和特殊字符
+PAYLOAD=$(jq -n \
+  --arg title "$TITLE" \
+  --arg content "$CONTENT" \
+  '{msg_type: "text", content: {text: ($title + "\n" + $content)}}')
+
 RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${FEISHU_WEBHOOK_URL}" \
   -H "Content-Type: application/json" \
-  -d "{\"msg_type\":\"text\",\"content\":{\"text\":\"${TITLE}\n${CONTENT}\"}}")
+  -d "$PAYLOAD")
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
 BODY=$(echo "$RESPONSE" | sed '$d')
