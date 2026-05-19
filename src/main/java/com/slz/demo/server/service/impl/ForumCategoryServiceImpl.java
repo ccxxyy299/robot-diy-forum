@@ -1,5 +1,6 @@
 package com.slz.demo.server.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.slz.demo.common.enumeration.ErrorCode;
 import com.slz.demo.common.exception.BusinessException;
@@ -11,8 +12,8 @@ import com.slz.demo.pojo.entity.User;
 import com.slz.demo.pojo.vo.CategoryTreeVO;
 import com.slz.demo.pojo.vo.CategoryVO;
 import com.slz.demo.server.mapper.ForumCategoryMapper;
+import com.slz.demo.server.mapper.ForumTopicMapper;
 import com.slz.demo.server.service.ForumCategoryService;
-import com.slz.demo.server.service.ForumTopicService;
 import com.slz.demo.server.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -33,7 +34,7 @@ import java.util.stream.Collectors;
 public class ForumCategoryServiceImpl extends ServiceImpl<ForumCategoryMapper, ForumCategory> implements ForumCategoryService {
 
     private final UserService userService;
-    private final ForumTopicService forumTopicService;
+    private final ForumTopicMapper forumTopicMapper;
 
     @Override
     public void add(CategoryDTO dto) {
@@ -101,7 +102,9 @@ public class ForumCategoryServiceImpl extends ServiceImpl<ForumCategoryMapper, F
         if (lambdaQuery().eq(ForumCategory::getParentId, id).exists()) {
             throw new BusinessException(ErrorCode.CATEGORY_HAS_CHILDREN);
         }
-        if (forumTopicService.lambdaQuery().eq(ForumTopic::getCategoryId, id).exists()) {
+        LambdaQueryWrapper<ForumTopic> topicWrapper = new LambdaQueryWrapper<>();
+        topicWrapper.eq(ForumTopic::getCategoryId, id);
+        if (forumTopicMapper.exists(topicWrapper)) {
             throw new BusinessException(ErrorCode.CATEGORY_HAS_TOPICS);
         }
         removeById(id);
