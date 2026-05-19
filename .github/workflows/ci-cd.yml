@@ -75,23 +75,32 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          script: |
+          source: robot-diy-forum-0.0.1-SNAPSHOT.jar
+          target: /WorkPlace/robot-diy-forum
+          command: |
             APP_DIR="/WorkPlace/robot-diy-forum"
             JAR_FILE="robot-diy-forum-0.0.1-SNAPSHOT.jar"
             PORT=${{ secrets.SERVER_PORT }}
 
             # Stop old process
-            kill $(lsof -t -i:$PORT) 2>/dev/null || true
+            kill $(lsof -t -i:$PORT 2>/dev/null || fuser -k -n tcp $PORT 2>/dev/null) 2>/dev/null || true
             sleep 2
 
-            # Upload new jar
-            mkdir -p $APP_DIR
-            cat > $APP_DIR/$JAR_FILE
+            # Fix CRLF in .env if present
+            sed -i 's/\r$//' $APP_DIR/.env 2>/dev/null || true
 
             # Start application with .env
             cd $APP_DIR
             set -a
             source $APP_DIR/.env
             set +a
-            nohup java -jar $JAR_FILE > app.log 2>&1 &
-            echo "Deployment completed"
+            nohup java -jar $APP_DIR/$JAR_FILE > app.log 2>&1 &
+
+            # Health check
+            sleep 5
+            if pgrep -f "$JAR_FILE" > /dev/null; then
+              echo "启动成功"
+            else
+              echo "启动失败，请检查 app.log"
+              exit 1
+            fi
