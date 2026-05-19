@@ -1,20 +1,18 @@
 spring:
   application:
     name: robot-diy-forum
-  profiles:
-    active: dev
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${spring.datasource.host}:${spring.datasource.port}/${spring.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
-    username: ${spring.datasource.username}
-    password: ${spring.datasource.password}
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_DATABASE}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USER}
+    password: ${DB_PASS}
   servlet:
     multipart:
-      max-file-size: 5MB
+      max-file-size: ${UPLOAD_MAX_SIZE:5MB}
       max-request-size: 10MB
 
 server:
-  port: 8080
+  port: ${SERVER_PORT}
 
 mybatis-plus:
   type-enums-package: com.slz.demo.common.enumeration
@@ -33,12 +31,12 @@ auto-table:
   model-package: com.slz.demo.pojo.entity
 
 jwt:
-  secret: ${jwt.secret}
-  expire: ${jwt.expire}
+  secret: ${JWT_SECRET}
+  expire: ${JWT_EXPIRE}
 
 upload:
-  path: ${upload.path}
-  max-image-size: ${upload.max-image-size}
+  path: ${UPLOAD_PATH}
+  max-image-size: ${UPLOAD_MAX_SIZE}
 
 logging:
   level:
