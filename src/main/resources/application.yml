@@ -39,3 +39,8 @@ jwt:
 upload:
   path: ${upload.path}
   max-image-size: ${upload.max-image-size}
+
+logging:
+  level:
+    root: INFO
+    com.slz.demo.server.mapper: DEBUG
