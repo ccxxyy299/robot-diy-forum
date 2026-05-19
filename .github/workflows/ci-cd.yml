@@ -84,4 +84,3 @@ jobs:
             set +a
             nohup java -jar $JAR_FILE > app.log 2>&1 &
             echo "Deployment completed"
-        stdin: true

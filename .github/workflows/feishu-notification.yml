@@ -21,7 +21,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           # push 事件
           PUSH_COMMITTER: ${{ github.event.pusher.name }}
-          PUSH_COMMIT_MSG: ${{ github.event.head_commit.message }}
+          PUSH_COMMITS: ${{ toJSON(github.event.commits) }}
           # pull_request 事件
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_USER: ${{ github.event.pull_request.user.login }}

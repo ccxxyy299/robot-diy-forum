@@ -3,8 +3,20 @@
 # 判断事件类型
 if [ "$GITHUB_EVENT_NAME" = "push" ]; then
   TITLE="GitHub 代码推送 - ${GITHUB_REF_NAME}"
+  COMMIT_COUNT=$(echo "$PUSH_COMMITS" | jq 'length')
+
   CONTENT="推送人: ${PUSH_COMMITTER}
-提交信息: ${PUSH_COMMIT_MSG}"
+提交数: ${COMMIT_COUNT}
+
+提交详情:"
+
+  # 遍历所有提交，提取 message 和 id
+  while IFS='|' read -r id msg; do
+    short_id="${id:0:7}"
+    CONTENT="${CONTENT}
+- ${msg}"
+  done < <(echo "$PUSH_COMMITS" | jq -r '.[] | "\(.id)|\(.message)"')
+
 elif [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
   case "$PR_ACTION" in
     opened)
