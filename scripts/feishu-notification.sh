@@ -10,12 +10,10 @@ if [ "$GITHUB_EVENT_NAME" = "push" ]; then
 
 提交详情:"
 
-  # 遍历所有提交，提取 message 和 id
-  while IFS='|' read -r id msg; do
-    short_id="${id:0:7}"
-    CONTENT="${CONTENT}
-- ${msg}"
-  done < <(echo "$PUSH_COMMITS" | jq -r '.[] | "\(.id)|\(.message)"')
+  # 用 jq 直接格式化为 bullet list，过滤空行
+  COMMIT_LIST=$(echo "$PUSH_COMMITS" | jq -r '.[].message' | grep -v '^$' | sed 's/^/- /')
+  CONTENT="${CONTENT}
+${COMMIT_LIST}"
 
 elif [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
   case "$PR_ACTION" in

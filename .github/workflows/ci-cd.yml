@@ -7,6 +7,17 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      DB_DATABASE: ${{ secrets.DB_DATABASE }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASS: ${{ secrets.DB_PASS }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      JWT_EXPIRE: ${{ secrets.JWT_EXPIRE }}
+      UPLOAD_PATH: ${{ secrets.UPLOAD_PATH }}
+      UPLOAD_MAX_SIZE: ${{ secrets.UPLOAD_MAX_SIZE }}
+      SERVER_PORT: ${{ secrets.SERVER_PORT }}
     steps:
       - uses: actions/checkout@v4
 
@@ -67,7 +78,7 @@ jobs:
           script: |
             APP_DIR="/WorkPlace/robot-diy-forum"
             JAR_FILE="robot-diy-forum-0.0.1-SNAPSHOT.jar"
-            PORT=8080
+            PORT=${{ secrets.SERVER_PORT }}
 
             # Stop old process
             kill $(lsof -t -i:$PORT) 2>/dev/null || true
