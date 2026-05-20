@@ -15,6 +15,7 @@ import com.slz.demo.pojo.entity.ForumTopic;
 import com.slz.demo.pojo.entity.User;
 import com.slz.demo.pojo.vo.ReplyVO;
 import com.slz.demo.server.mapper.ForumReplyMapper;
+import com.slz.demo.server.mapper.ForumTopicMapper;
 import com.slz.demo.server.service.ForumReplyService;
 import com.slz.demo.server.service.ForumTopicService;
 import com.slz.demo.server.service.UserService;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumReply> implements ForumReplyService {
 
     private final ForumTopicService topicService;
+    private final ForumTopicMapper topicMapper;
     private final UserService userService;
 
     @Override
@@ -77,8 +79,7 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
         save(reply);
 
         // 更新主题帖回复数
-        topic.setReplyCount(topic.getReplyCount() + 1);
-        topicService.updateById(topic);
+        topicMapper.incrementReplyCount(dto.getTopicId());
     }
 
     @Override
@@ -94,8 +95,7 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
         // 更新主题帖回复数
         ForumTopic topic = topicService.getById(reply.getTopicId());
         if (topic != null && topic.getReplyCount() > 0) {
-            topic.setReplyCount(topic.getReplyCount() - 1);
-            topicService.updateById(topic);
+            topicMapper.decrementReplyCount(reply.getTopicId());
         }
     }
 

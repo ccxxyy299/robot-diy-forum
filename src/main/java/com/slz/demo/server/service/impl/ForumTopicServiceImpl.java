@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTopic> implements ForumTopicService {
 
     private final ForumTopicTagMapper topicTagMapper;
+    private final ForumTopicMapper topicMapper;
     private final ForumCategoryService categoryService;
     private final ForumTagService tagService;
     private final UserService userService;
@@ -54,9 +55,10 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
             throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
 
-        // 验证标签是否存在（如果有标签）
+        // 验证标签是否存在，去重避免重复插入
         if (dto.getTagIds() != null && !dto.getTagIds().isEmpty()) {
-            for (Long tagId : dto.getTagIds()) {
+            List<Long> distinctTagIds = dto.getTagIds().stream().distinct().toList();
+            for (Long tagId : distinctTagIds) {
                 if (!tagService.lambdaQuery().eq(ForumTag::getId, tagId).exists()) {
                     throw new BusinessException(ErrorCode.TAG_NOT_FOUND);
                 }
@@ -76,12 +78,12 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
 
         // 保存标签关联
         if (dto.getTagIds() != null && !dto.getTagIds().isEmpty()) {
-            for (Long tagId : dto.getTagIds()) {
+            dto.getTagIds().stream().distinct().forEach(tagId -> {
                 ForumTopicTag topicTag = new ForumTopicTag();
                 topicTag.setTopicId(topic.getId());
                 topicTag.setTagId(tagId);
                 topicTagMapper.insert(topicTag);
-            }
+            });
         }
     }
 
@@ -116,9 +118,10 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
             throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
 
-        // 验证标签是否存在（如果有标签）
+        // 验证标签是否存在，去重避免重复插入
         if (dto.getTagIds() != null && !dto.getTagIds().isEmpty()) {
-            for (Long tagId : dto.getTagIds()) {
+            List<Long> distinctTagIds = dto.getTagIds().stream().distinct().toList();
+            for (Long tagId : distinctTagIds) {
                 if (!tagService.lambdaQuery().eq(ForumTag::getId, tagId).exists()) {
                     throw new BusinessException(ErrorCode.TAG_NOT_FOUND);
                 }
@@ -139,12 +142,12 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
 
         // 保存新的标签关联
         if (dto.getTagIds() != null && !dto.getTagIds().isEmpty()) {
-            for (Long tagId : dto.getTagIds()) {
+            dto.getTagIds().stream().distinct().forEach(tagId -> {
                 ForumTopicTag topicTag = new ForumTopicTag();
                 topicTag.setTopicId(id);
                 topicTag.setTagId(tagId);
                 topicTagMapper.insert(topicTag);
-            }
+            });
         }
     }
 
@@ -199,9 +202,12 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
             throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
         }
 
+        if (topic.getStatus() == 0) {
+            throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
+        }
+
         // 增加浏览数
-        topic.setViewCount(topic.getViewCount() + 1);
-        updateById(topic);
+        topicMapper.incrementViewCount(id);
 
         // 查询分类
         ForumCategory category = categoryService.getById(topic.getCategoryId());

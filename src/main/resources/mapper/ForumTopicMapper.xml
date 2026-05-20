@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.slz.demo.server.mapper.ForumTopicMapper">
+
+    <update id="incrementViewCount">
+        UPDATE forum_topic SET view_count = view_count + 1 WHERE id = #{id}
+    </update>
+
+    <update id="incrementReplyCount">
+        UPDATE forum_topic SET reply_count = reply_count + 1 WHERE id = #{id}
+    </update>
+
+    <update id="decrementReplyCount">
+        UPDATE forum_topic SET reply_count = reply_count - 1 WHERE id = #{id}
+    </update>
+
+</mapper>
