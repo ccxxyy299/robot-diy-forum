@@ -34,3 +34,6 @@ build/
 
 ### Environment Variables ###
 .env
+
+### CI/CD ###
+.github/workflows/ci-cd.yml
