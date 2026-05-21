@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.slz.demo.common.enumeration.ErrorCode;
+import com.slz.demo.common.enumeration.UserRole;
 import com.slz.demo.common.exception.BusinessException;
 import com.slz.demo.common.util.UserContext;
+import com.slz.demo.pojo.ao.RoleAO;
 import com.slz.demo.pojo.dto.TopicDTO;
 import com.slz.demo.pojo.dto.TopicQueryDTO;
 import com.slz.demo.pojo.entity.ForumCategory;
@@ -264,6 +266,46 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
         vo.setTags(tags);
 
         return vo;
+    }
+
+    @Override
+    public void updateTopicStatus(Long topicId, boolean status) {
+        ForumTopic topic = getById(topicId);
+        if (topic == null) {
+            throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
+        }
+
+        RoleAO ao = UserContext.get();
+        // 只有管理员或帖子作者本人可以修改状态
+        if (ao.getRole() != UserRole.ADMIN && !topic.getCreatorId().equals(ao.getUserId())) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+
+        topic.setStatus(status ? 1 : 0);
+        topic.setUpdateTime(LocalDateTime.now());
+        updateById(topic);
+    }
+
+    @Override
+    public Page<TopicVO> myTopics(Integer pageNum, Integer pageSize) {
+        if (pageNum == null || pageNum < 1) {
+            pageNum = 1;
+        }
+        if (pageSize == null || pageSize < 1 || pageSize > 100) {
+            pageSize = 10;
+        }
+
+        Long userId = UserContext.get().getUserId();
+
+        Page<ForumTopic> page = new Page<>(pageNum, pageSize);
+        LambdaQueryWrapper<ForumTopic> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ForumTopic::getCreatorId, userId)
+                .orderByDesc(ForumTopic::getCreateTime);
+        Page<ForumTopic> topicPage = page(page, wrapper);
+
+        Page<TopicVO> voPage = new Page<>(topicPage.getCurrent(), topicPage.getSize(), topicPage.getTotal());
+        voPage.setRecords(toVOList(topicPage.getRecords()));
+        return voPage;
     }
 
     /**

@@ -1,5 +1,7 @@
 package com.slz.demo.server.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.slz.demo.common.enumeration.ErrorCode;
 import com.slz.demo.common.enumeration.UserRole;
@@ -11,6 +13,7 @@ import com.slz.demo.common.util.UserContext;
 import com.slz.demo.pojo.ao.RoleAO;
 import com.slz.demo.pojo.dto.LoginDTO;
 import com.slz.demo.pojo.dto.RegisterDTO;
+import com.slz.demo.pojo.dto.UserPageQueryDTO;
 import com.slz.demo.pojo.entity.User;
 import com.slz.demo.pojo.vo.UserVO;
 import com.slz.demo.server.mapper.UserMapper;
@@ -138,5 +141,62 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 oldFile.delete();
             }
         }
+    }
+
+    @Override
+    public void updateUserStatus(Long targetUserId, boolean status) {
+        RoleAO ao = UserContext.get();
+
+        if (ao.getRole() != UserRole.ADMIN) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+
+        User targetUser = getById(targetUserId);
+        if (targetUser == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        if (targetUser.getRole() == UserRole.ADMIN) {
+            throw new BusinessException(ErrorCode.CANNOT_MODIFY_ADMIN);
+        }
+
+        targetUser.setStatus(status ? 1 : 0);
+        targetUser.setUpdateTime(LocalDateTime.now());
+        updateById(targetUser);
+    }
+
+    @Override
+    public Page<UserVO> page(UserPageQueryDTO queryDTO) {
+        // 校验当前用户必须是管理员
+        RoleAO ao = UserContext.get();
+        if (ao.getRole() != UserRole.ADMIN) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+
+        // 动态拼接查询条件
+        Page<User> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(queryDTO.getUsername() != null && !queryDTO.getUsername().isEmpty(),
+                User::getUsername, queryDTO.getUsername())
+                .like(queryDTO.getEmail() != null && !queryDTO.getEmail().isEmpty(),
+                        User::getEmail, queryDTO.getEmail())
+                .eq(queryDTO.getStatus() != null,
+                        User::getStatus, queryDTO.getStatus())
+                .ge(queryDTO.getCreateTimeStart() != null,
+                        User::getCreateTime, queryDTO.getCreateTimeStart())
+                .le(queryDTO.getCreateTimeEnd() != null,
+                        User::getCreateTime, queryDTO.getCreateTimeEnd())
+                .orderByDesc(User::getCreateTime);
+
+        Page<User> userPage = page(page, wrapper);
+
+        // 转换为VO分页
+        Page<UserVO> voPage = new Page<>(userPage.getCurrent(), userPage.getSize(), userPage.getTotal());
+        voPage.setRecords(userPage.getRecords().stream().map(user -> {
+            UserVO vo = new UserVO();
+            BeanUtils.copyProperties(user, vo);
+            return vo;
+        }).toList());
+        return voPage;
     }
 }

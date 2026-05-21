@@ -52,4 +52,19 @@ public interface ForumTopicService extends IService<ForumTopic> {
      * @return 主题帖详情
      */
     TopicVO detail(Long id);
+
+    /**
+     * 修改主题帖状态（显示/隐藏）
+     * @param topicId 主题帖ID
+     * @param status 目标状态（true显示 false隐藏）
+     */
+    void updateTopicStatus(Long topicId, boolean status);
+
+    /**
+     * 查询当前用户的主题帖
+     * @param pageNum 页码
+     * @param pageSize 每页条数
+     * @return 分页结果
+     */
+    Page<TopicVO> myTopics(Integer pageNum, Integer pageSize);
 }

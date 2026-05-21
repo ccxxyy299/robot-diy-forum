@@ -139,6 +139,28 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
         return voPage;
     }
 
+    @Override
+    public Page<ReplyVO> myReplies(Integer pageNum, Integer pageSize) {
+        if (pageNum == null || pageNum < 1) {
+            pageNum = 1;
+        }
+        if (pageSize == null || pageSize < 1 || pageSize > 100) {
+            pageSize = 10;
+        }
+
+        Long userId = UserContext.get().getUserId();
+
+        Page<ForumReply> page = new Page<>(pageNum, pageSize);
+        LambdaQueryWrapper<ForumReply> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ForumReply::getCreatorId, userId)
+                .orderByDesc(ForumReply::getCreateTime);
+        Page<ForumReply> replyPage = page(page, wrapper);
+
+        Page<ReplyVO> voPage = new Page<>(replyPage.getCurrent(), replyPage.getSize(), replyPage.getTotal());
+        voPage.setRecords(toVOList(replyPage.getRecords()));
+        return voPage;
+    }
+
     /**
      * 批量转换为VO，一次性查询所有关联用户避免N+1问题
      */

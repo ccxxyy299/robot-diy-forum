@@ -35,6 +35,8 @@ public class TopicVO {
 
     private LocalDateTime updateTime;
 
+    private Integer isDeleted;
+
     /**
      * 标签列表
      */

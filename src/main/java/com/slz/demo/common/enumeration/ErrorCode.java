@@ -18,6 +18,8 @@ public enum ErrorCode {
     UNAUTHORIZED(401, "当前用户未登录"),
     TOKEN_INVALID(401, "token无效或已过期"),
     NO_PERMISSION(403, "无操作权限"),
+    CANNOT_MODIFY_SELF(400, "不能修改自己的状态"),
+    CANNOT_MODIFY_ADMIN(400, "不能修改管理员的状态"),
     CATEGORY_NOT_FOUND(400, "分类不存在"),
     CATEGORY_NAME_DUPLICATE(400, "同级别下分类名称已存在"),
     CATEGORY_HAS_CHILDREN(400, "该分类下有子分类，无法删除"),

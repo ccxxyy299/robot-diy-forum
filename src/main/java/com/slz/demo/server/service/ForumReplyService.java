@@ -36,4 +36,12 @@ public interface ForumReplyService extends IService<ForumReply> {
      * @return 分页结果
      */
     Page<ReplyVO> pageChildReply(ReplyChildQueryDTO queryDTO);
+
+    /**
+     * 查询当前用户的回复
+     * @param pageNum 页码
+     * @param pageSize 每页条数
+     * @return 分页结果
+     */
+    Page<ReplyVO> myReplies(Integer pageNum, Integer pageSize);
 }

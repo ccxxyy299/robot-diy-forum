@@ -10,10 +10,12 @@ import com.slz.demo.server.service.ForumReplyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -64,7 +66,20 @@ public class ForumReplyController {
      * @return 分页结果
      */
     @PostMapping("/child/page")
-    public Result<Page<ReplyVO>> c(@RequestBody ReplyChildQueryDTO queryDTO) {
+    public Result<Page<ReplyVO>> pageChildReply(@RequestBody ReplyChildQueryDTO queryDTO) {
         return Result.success(forumReplyService.pageChildReply(queryDTO));
+    }
+
+    /**
+     * 查询当前用户的回复
+     * @param pageNum 页码
+     * @param pageSize 每页条数
+     * @return 分页结果
+     */
+    @GetMapping("/my")
+    public Result<Page<ReplyVO>> myReplies(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        return Result.success(forumReplyService.myReplies(pageNum, pageSize));
     }
 }

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -91,5 +92,30 @@ public class ForumTopicController {
     @GetMapping("/detail/{id}")
     public Result<TopicVO> detail(@PathVariable Long id) {
         return Result.success(forumTopicService.detail(id));
+    }
+
+    /**
+     * 修改主题帖状态（显示/隐藏）
+     * @param id 主题帖ID
+     * @param status 目标状态（true显示 false隐藏）
+     * @return 结果
+     */
+    @PutMapping("/{id}/status")
+    public Result<String> updateTopicStatus(@PathVariable Long id, @RequestParam boolean status) {
+        forumTopicService.updateTopicStatus(id, status);
+        return Result.success("修改成功");
+    }
+
+    /**
+     * 查询当前用户的主题帖
+     * @param pageNum 页码
+     * @param pageSize 每页条数
+     * @return 分页结果
+     */
+    @GetMapping("/my")
+    public Result<Page<TopicVO>> myTopics(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        return Result.success(forumTopicService.myTopics(pageNum, pageSize));
     }
 }
