@@ -3,19 +3,20 @@ package com.slz.demo.server.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.slz.demo.server.constant.ForumConstants;
 import com.slz.demo.common.enumeration.ErrorCode;
 import com.slz.demo.common.exception.BusinessException;
 import com.slz.demo.common.util.UserContext;
+import com.slz.demo.pojo.dto.ReplyChildQueryDTO;
 import com.slz.demo.pojo.dto.ReplyDTO;
 import com.slz.demo.pojo.dto.ReplyTopQueryDTO;
-import com.slz.demo.pojo.dto.ReplyChildQueryDTO;
 import com.slz.demo.pojo.entity.ForumReply;
 import com.slz.demo.pojo.entity.ForumTopic;
 import com.slz.demo.pojo.entity.User;
 import com.slz.demo.pojo.vo.ReplyVO;
+import com.slz.demo.server.constant.ForumConstants;
 import com.slz.demo.server.mapper.ForumReplyMapper;
 import com.slz.demo.server.mapper.ForumTopicMapper;
+import com.slz.demo.server.service.ForumPermissionService;
 import com.slz.demo.server.service.ForumReplyService;
 import com.slz.demo.server.service.ForumTopicService;
 import com.slz.demo.server.service.UserService;
@@ -39,6 +40,7 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
     private final ForumTopicService topicService;
     private final ForumTopicMapper topicMapper;
     private final UserService userService;
+    private final ForumPermissionService forumPermissionService;
 
     @Override
     @Transactional
@@ -90,11 +92,16 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
             throw new BusinessException(ErrorCode.REPLY_NOT_FOUND);
         }
 
+        ForumTopic topic = topicService.getById(reply.getTopicId());
+        if (topic == null) {
+            throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
+        }
+
+        forumPermissionService.checkCanDeleteReply(reply, topic);
+
         removeById(id);
 
-        // 更新主题帖回复数
-        ForumTopic topic = topicService.getById(reply.getTopicId());
-        if (topic != null && topic.getReplyCount() > 0) {
+        if (topic.getReplyCount() > 0) {
             topicMapper.decrementReplyCount(reply.getTopicId());
         }
     }
@@ -180,7 +187,7 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
         Map<Long, User> userMap = userIds.isEmpty()
                 ? Map.of()
                 : userService.listByIds(userIds).stream()
-                        .collect(Collectors.toMap(User::getId, u -> u));
+                .collect(Collectors.toMap(User::getId, u -> u));
 
         return entities.stream()
                 .map(entity -> toVO(entity, userMap))

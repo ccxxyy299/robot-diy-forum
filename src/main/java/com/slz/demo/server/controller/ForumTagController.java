@@ -1,8 +1,10 @@
 package com.slz.demo.server.controller;
 
+import com.slz.demo.common.enumeration.UserRole;
 import com.slz.demo.common.result.Result;
 import com.slz.demo.pojo.dto.TagDTO;
 import com.slz.demo.pojo.vo.TagVO;
+import com.slz.demo.server.annotation.RoleRequired;
 import com.slz.demo.server.service.ForumTagService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 标签
+ * 标签接口
  */
 @RestController
 @RequestMapping("/tag")
@@ -34,6 +36,7 @@ public class ForumTagController {
      * @return 结果
      */
     @PostMapping
+    @RoleRequired(UserRole.ADMIN)
     public Result<String> add(@Valid @RequestBody TagDTO dto) {
         forumTagService.add(dto);
         return Result.success("新增成功");
@@ -45,6 +48,7 @@ public class ForumTagController {
      * @return 结果
      */
     @DeleteMapping("/{id}")
+    @RoleRequired(UserRole.ADMIN)
     public Result<String> delete(@PathVariable Long id) {
         forumTagService.delete(id);
         return Result.success("删除成功");
@@ -57,6 +61,7 @@ public class ForumTagController {
      * @return 结果
      */
     @PutMapping("/{id}")
+    @RoleRequired(UserRole.ADMIN)
     public Result<String> update(@PathVariable Long id, @Valid @RequestBody TagDTO dto) {
         forumTagService.update(id, dto);
         return Result.success("修改成功");

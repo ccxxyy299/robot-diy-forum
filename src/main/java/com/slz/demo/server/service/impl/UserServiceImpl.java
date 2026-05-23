@@ -98,6 +98,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!id.equals(ao.getUserId())) {
             throw new BusinessException(ErrorCode.NO_PERMISSION);
         }
+
         User user = getById(id);
         if (user == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
@@ -114,10 +115,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             if (newAvatarPath != null) {
                 user.setAvatar(newAvatarPath);
             }
-            if (nickname != null && !nickname.isEmpty()) {
+            if (nickname != null && !nickname.isBlank()) {
                 user.setNickname(nickname);
             }
-            if (email != null && !email.isEmpty()) {
+            if (email != null && !email.isBlank()) {
                 user.setEmail(email);
             }
             user.setUpdateTime(LocalDateTime.now());
@@ -129,8 +130,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     newFile.delete();
                 }
             }
-            if (e instanceof BusinessException) {
-                throw (BusinessException) e;
+            if (e instanceof BusinessException businessException) {
+                throw businessException;
             }
             throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED);
         }
@@ -145,12 +146,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public void updateUserStatus(Long targetUserId, boolean status) {
-        RoleAO ao = UserContext.get();
-
-        if (ao.getRole() != UserRole.ADMIN) {
-            throw new BusinessException(ErrorCode.NO_PERMISSION);
-        }
-
         User targetUser = getById(targetUserId);
         if (targetUser == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
@@ -167,25 +162,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public Page<UserVO> page(UserPageQueryDTO queryDTO) {
-        // 校验当前用户必须是管理员
-        RoleAO ao = UserContext.get();
-        if (ao.getRole() != UserRole.ADMIN) {
-            throw new BusinessException(ErrorCode.NO_PERMISSION);
-        }
-
-        // 动态拼接查询条件
         Page<User> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.like(queryDTO.getUsername() != null && !queryDTO.getUsername().isEmpty(),
-                User::getUsername, queryDTO.getUsername())
-                .like(queryDTO.getEmail() != null && !queryDTO.getEmail().isEmpty(),
+        wrapper.like(queryDTO.getUsername() != null && !queryDTO.getUsername().isBlank(),
+                        User::getUsername, queryDTO.getUsername())
+                .like(queryDTO.getEmail() != null && !queryDTO.getEmail().isBlank(),
                         User::getEmail, queryDTO.getEmail())
-                .eq(queryDTO.getStatus() != null,
-                        User::getStatus, queryDTO.getStatus())
-                .ge(queryDTO.getCreateTimeStart() != null,
-                        User::getCreateTime, queryDTO.getCreateTimeStart())
-                .le(queryDTO.getCreateTimeEnd() != null,
-                        User::getCreateTime, queryDTO.getCreateTimeEnd())
+                .eq(queryDTO.getStatus() != null, User::getStatus, queryDTO.getStatus())
+                .ge(queryDTO.getCreateTimeStart() != null, User::getCreateTime, queryDTO.getCreateTimeStart())
+                .le(queryDTO.getCreateTimeEnd() != null, User::getCreateTime, queryDTO.getCreateTimeEnd())
                 .orderByDesc(User::getCreateTime);
 
         Page<User> userPage = page(page, wrapper);

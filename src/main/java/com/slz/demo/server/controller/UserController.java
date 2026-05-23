@@ -1,11 +1,13 @@
 package com.slz.demo.server.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.slz.demo.common.enumeration.UserRole;
 import com.slz.demo.common.result.Result;
 import com.slz.demo.pojo.dto.LoginDTO;
 import com.slz.demo.pojo.dto.RegisterDTO;
 import com.slz.demo.pojo.dto.UserPageQueryDTO;
 import com.slz.demo.pojo.vo.UserVO;
+import com.slz.demo.server.annotation.RoleRequired;
 import com.slz.demo.server.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * 用户
+ * 用户接口
  */
 @RestController
 @RequestMapping("/user")
@@ -55,11 +57,12 @@ public class UserController {
      * @return
      */
     @GetMapping("/me")
+    @RoleRequired(UserRole.USER)
     public Result<UserVO> me() {
         return Result.success(userService.getCurrentUser());
     }
 
-/**
+    /**
      * 修改用户信息
      * @param id
      * @param avatar
@@ -68,6 +71,7 @@ public class UserController {
      * @return
      */
     @PutMapping("/update")
+    @RoleRequired(UserRole.USER)
     public Result<String> update(@RequestParam("id") Long id,
                                  @RequestParam(value = "avatar", required = false) MultipartFile avatar,
                                  @RequestParam(value = "nickname", required = false) String nickname,
@@ -83,6 +87,7 @@ public class UserController {
      * @return 结果
      */
     @PutMapping("/{id}/status")
+    @RoleRequired(UserRole.ADMIN)
     public Result<String> updateUserStatus(@PathVariable Long id, @RequestParam boolean status) {
         userService.updateUserStatus(id, status);
         return Result.success("修改成功");
@@ -94,6 +99,7 @@ public class UserController {
      * @return 分页结果
      */
     @PostMapping("/page")
+    @RoleRequired(UserRole.ADMIN)
     public Result<Page<UserVO>> page(@RequestBody UserPageQueryDTO queryDTO) {
         return Result.success(userService.page(queryDTO));
     }

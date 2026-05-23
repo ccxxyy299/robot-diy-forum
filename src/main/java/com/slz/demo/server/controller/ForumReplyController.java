@@ -1,11 +1,13 @@
 package com.slz.demo.server.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.slz.demo.common.enumeration.UserRole;
 import com.slz.demo.common.result.Result;
+import com.slz.demo.pojo.dto.ReplyChildQueryDTO;
 import com.slz.demo.pojo.dto.ReplyDTO;
 import com.slz.demo.pojo.dto.ReplyTopQueryDTO;
-import com.slz.demo.pojo.dto.ReplyChildQueryDTO;
 import com.slz.demo.pojo.vo.ReplyVO;
+import com.slz.demo.server.annotation.RoleRequired;
 import com.slz.demo.server.service.ForumReplyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,7 @@ public class ForumReplyController {
      * @return 结果
      */
     @PostMapping
+    @RoleRequired(UserRole.USER)
     public Result<String> add(@Valid @RequestBody ReplyDTO dto) {
         forumReplyService.add(dto);
         return Result.success("新增成功");
@@ -45,6 +48,7 @@ public class ForumReplyController {
      * @return 结果
      */
     @DeleteMapping("/{id}")
+    @RoleRequired(UserRole.USER)
     public Result<String> delete(@PathVariable Long id) {
         forumReplyService.delete(id);
         return Result.success("删除成功");
@@ -77,6 +81,7 @@ public class ForumReplyController {
      * @return 分页结果
      */
     @GetMapping("/my")
+    @RoleRequired(UserRole.USER)
     public Result<Page<ReplyVO>> myReplies(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {

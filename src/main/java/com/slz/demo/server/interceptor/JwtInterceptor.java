@@ -29,8 +29,12 @@ public class JwtInterceptor implements HandlerInterceptor {
         }
 
         String auth = request.getHeader("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        if (auth == null || auth.isBlank()) {
+            return true;
+        }
+
+        if (!auth.startsWith("Bearer ")) {
+            throw new BusinessException(ErrorCode.TOKEN_INVALID);
         }
 
         try {
@@ -39,7 +43,7 @@ public class JwtInterceptor implements HandlerInterceptor {
             UserContext.set(ao);
             return true;
         } catch (Exception e) {
-            log.warn("token 解析失败: {}", e.getMessage());
+            log.warn("token解析失败: {}", e.getMessage());
             throw new BusinessException(ErrorCode.TOKEN_INVALID);
         }
     }

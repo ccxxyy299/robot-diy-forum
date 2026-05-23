@@ -1,9 +1,11 @@
 package com.slz.demo.server.controller;
 
+import com.slz.demo.common.enumeration.UserRole;
 import com.slz.demo.common.result.Result;
 import com.slz.demo.pojo.dto.CategoryDTO;
 import com.slz.demo.pojo.vo.CategoryTreeVO;
 import com.slz.demo.pojo.vo.CategoryVO;
+import com.slz.demo.server.annotation.RoleRequired;
 import com.slz.demo.server.service.ForumCategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 分类
+ * 分类接口
  */
 @RestController
 @RequestMapping("/category")
@@ -36,6 +38,7 @@ public class ForumCategoryController {
      * @return 结果
      */
     @PostMapping
+    @RoleRequired(UserRole.ADMIN)
     public Result<String> add(@Valid @RequestBody CategoryDTO dto) {
         forumCategoryService.add(dto);
         return Result.success("新增成功");
@@ -48,6 +51,7 @@ public class ForumCategoryController {
      * @return 结果
      */
     @PutMapping("/{id}")
+    @RoleRequired(UserRole.ADMIN)
     public Result<String> edit(@PathVariable Long id, @Valid @RequestBody CategoryDTO dto) {
         forumCategoryService.edit(id, dto);
         return Result.success("编辑成功");
@@ -59,6 +63,7 @@ public class ForumCategoryController {
      * @return 结果
      */
     @DeleteMapping("/{id}")
+    @RoleRequired(UserRole.ADMIN)
     public Result<String> remove(@PathVariable Long id) {
         forumCategoryService.remove(id);
         return Result.success("删除成功");
@@ -66,7 +71,6 @@ public class ForumCategoryController {
 
     /**
      * 查询所有父分类
-     * @return 父分类列表
      */
     @GetMapping("/parents")
     public Result<List<CategoryVO>> listParents() {

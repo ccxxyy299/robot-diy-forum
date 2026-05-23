@@ -4,10 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.slz.demo.common.enumeration.ErrorCode;
-import com.slz.demo.common.enumeration.UserRole;
 import com.slz.demo.common.exception.BusinessException;
 import com.slz.demo.common.util.UserContext;
-import com.slz.demo.pojo.ao.RoleAO;
 import com.slz.demo.pojo.dto.TopicDTO;
 import com.slz.demo.pojo.dto.TopicQueryDTO;
 import com.slz.demo.pojo.entity.ForumCategory;
@@ -20,6 +18,7 @@ import com.slz.demo.pojo.vo.TopicVO;
 import com.slz.demo.server.mapper.ForumTopicMapper;
 import com.slz.demo.server.mapper.ForumTopicTagMapper;
 import com.slz.demo.server.service.ForumCategoryService;
+import com.slz.demo.server.service.ForumPermissionService;
 import com.slz.demo.server.service.ForumTagService;
 import com.slz.demo.server.service.ForumTopicService;
 import com.slz.demo.server.service.UserService;
@@ -47,6 +46,7 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
     private final ForumCategoryService categoryService;
     private final ForumTagService tagService;
     private final UserService userService;
+    private final ForumPermissionService forumPermissionService;
 
     @Override
     @Transactional
@@ -97,7 +97,8 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
             throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
         }
 
-        // 删除主题帖
+        forumPermissionService.checkCanDeleteTopic(topic);
+
         removeById(id);
 
         // 删除标签关联
@@ -114,7 +115,8 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
             throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
         }
 
-        // 验证分类是否存在
+        forumPermissionService.checkCanUpdateTopic(topic);
+
         ForumCategory category = categoryService.getById(dto.getCategoryId());
         if (category == null) {
             throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
@@ -200,11 +202,7 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
     @Override
     public TopicVO detail(Long id) {
         ForumTopic topic = getById(id);
-        if (topic == null) {
-            throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
-        }
-
-        if (topic.getStatus() == 0) {
+        if (topic == null || topic.getStatus() == 0) {
             throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
         }
 
@@ -240,7 +238,7 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
         Map<Long, User> userMap = userIds.isEmpty()
                 ? Map.of()
                 : userService.listByIds(userIds).stream()
-                        .collect(Collectors.toMap(User::getId, u -> u));
+                .collect(Collectors.toMap(User::getId, u -> u));
 
         // 组装VO
         TopicVO vo = new TopicVO();
@@ -255,14 +253,12 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
             vo.setCategoryName(category.getName());
         }
 
-        // 填充标签创建者昵称
         for (TagVO tagVO : tags) {
             User tagCreator = userMap.get(tagVO.getCreatorId());
             if (tagCreator != null) {
                 tagVO.setCreatorNickname(tagCreator.getNickname());
             }
         }
-
         vo.setTags(tags);
 
         return vo;
@@ -273,12 +269,6 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
         ForumTopic topic = getById(topicId);
         if (topic == null) {
             throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
-        }
-
-        RoleAO ao = UserContext.get();
-        // 只有管理员或帖子作者本人可以修改状态
-        if (ao.getRole() != UserRole.ADMIN && !topic.getCreatorId().equals(ao.getUserId())) {
-            throw new BusinessException(ErrorCode.NO_PERMISSION);
         }
 
         topic.setStatus(status ? 1 : 0);
@@ -373,7 +363,7 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
         Map<Long, ForumTag> tagMap = allTagIds.isEmpty()
                 ? Map.of()
                 : tagService.listByIds(allTagIds).stream()
-                        .collect(Collectors.toMap(ForumTag::getId, t -> t));
+                .collect(Collectors.toMap(ForumTag::getId, t -> t));
 
         // 批量查询标签创建者用户
         Set<Long> tagCreatorIds = tagMap.values().stream()
@@ -387,15 +377,15 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
         Map<Long, User> userMap = allUserIds.isEmpty()
                 ? Map.of()
                 : userService.listByIds(allUserIds).stream()
-                        .collect(Collectors.toMap(User::getId, u -> u));
+                .collect(Collectors.toMap(User::getId, u -> u));
 
         return entities.stream()
                 .map(entity -> toVO(entity, userMap, categoryMap, tagMap, topicTagIdsMap))
                 .toList();
     }
 
-    private TopicVO toVO(ForumTopic entity, 
-                         Map<Long, User> userMap, 
+    private TopicVO toVO(ForumTopic entity,
+                         Map<Long, User> userMap,
                          Map<Long, ForumCategory> categoryMap,
                          Map<Long, ForumTag> tagMap,
                          Map<Long, List<Long>> topicTagIdsMap) {

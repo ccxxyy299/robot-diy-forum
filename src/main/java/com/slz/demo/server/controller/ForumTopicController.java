@@ -1,10 +1,12 @@
 package com.slz.demo.server.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.slz.demo.common.enumeration.UserRole;
 import com.slz.demo.common.result.Result;
 import com.slz.demo.pojo.dto.TopicDTO;
 import com.slz.demo.pojo.dto.TopicQueryDTO;
 import com.slz.demo.pojo.vo.TopicVO;
+import com.slz.demo.server.annotation.RoleRequired;
 import com.slz.demo.server.service.ForumTopicService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,7 @@ public class ForumTopicController {
      * @return 结果
      */
     @PostMapping
+    @RoleRequired(UserRole.USER)
     public Result<String> add(@Valid @RequestBody TopicDTO dto) {
         forumTopicService.add(dto);
         return Result.success("新增成功");
@@ -47,6 +50,7 @@ public class ForumTopicController {
      * @return 结果
      */
     @DeleteMapping("/{id}")
+    @RoleRequired(UserRole.USER)
     public Result<String> delete(@PathVariable Long id) {
         forumTopicService.delete(id);
         return Result.success("删除成功");
@@ -59,6 +63,7 @@ public class ForumTopicController {
      * @return 结果
      */
     @PutMapping("/{id}")
+    @RoleRequired(UserRole.USER)
     public Result<String> update(@PathVariable Long id, @Valid @RequestBody TopicDTO dto) {
         forumTopicService.update(id, dto);
         return Result.success("修改成功");
@@ -101,6 +106,7 @@ public class ForumTopicController {
      * @return 结果
      */
     @PutMapping("/{id}/status")
+    @RoleRequired(UserRole.ADMIN)
     public Result<String> updateTopicStatus(@PathVariable Long id, @RequestParam boolean status) {
         forumTopicService.updateTopicStatus(id, status);
         return Result.success("修改成功");
@@ -113,6 +119,7 @@ public class ForumTopicController {
      * @return 分页结果
      */
     @GetMapping("/my")
+    @RoleRequired(UserRole.USER)
     public Result<Page<TopicVO>> myTopics(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
