@@ -41,4 +41,4 @@ upload:
 logging:
   level:
     root: INFO
-    com.slz.demo.server.mapper: DEBUG
+    com.slz.demo: DEBUG
