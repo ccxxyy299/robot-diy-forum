@@ -180,6 +180,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         voPage.setRecords(userPage.getRecords().stream().map(user -> {
             UserVO vo = new UserVO();
             BeanUtils.copyProperties(user, vo);
+            if (user.getAvatar() != null) {
+                vo.setAvatar("/upload/" + user.getAvatar());
+            }
             return vo;
         }).toList());
         return voPage;
