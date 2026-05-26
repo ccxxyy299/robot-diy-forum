@@ -54,9 +54,9 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
     public Long add(ReplyAndAttachmentDTO dto) {
         ReplyDTO replyDTO = dto.getReply();
 
-        // 验证主题帖是否存在
+        // 验证主题帖是否存在且可见
         ForumTopic topic = topicService.getById(replyDTO.getTopicId());
-        if (topic == null) {
+        if (topic == null || topic.getStatus() == 0) {
             throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
         }
 
@@ -125,9 +125,9 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
 
     @Override
     public Page<ReplyVO> pageTopReply(ReplyTopQueryDTO queryDTO) {
-        // 验证主题帖是否存在
+        // 验证主题帖是否存在且可见
         ForumTopic topic = topicService.getById(queryDTO.getTopicId());
-        if (topic == null) {
+        if (topic == null || topic.getStatus() == 0) {
             throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
         }
 
@@ -148,9 +148,9 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
             throw new BusinessException(ErrorCode.REPLY_NOT_FOUND);
         }
 
-        // 验证父回复所属的主题帖是否存在
+        // 验证父回复所属的主题帖是否存在且可见
         ForumTopic topic = topicService.getById(parentReply.getTopicId());
-        if (topic == null) {
+        if (topic == null || topic.getStatus() == 0) {
             throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
         }
 
