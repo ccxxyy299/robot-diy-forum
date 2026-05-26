@@ -235,9 +235,9 @@ public class ForumAttachmentServiceImpl extends ServiceImpl<ForumAttachmentMappe
         vo.setFileName(entity.getFileName());
         vo.setFileSize(entity.getFileSize());
         vo.setFileType(entity.getFileType());
-        // 图片：直接通过静态资源访问磁盘文件；文件：null
+        // 图片：通过 view 接口访问（有可见性校验）；文件：null
         if (AttachmentConstants.FILE_TYPE_IMAGE.equals(entity.getFileType())) {
-            vo.setUrl(baseUrl + "/upload/" + entity.getFilePath());
+            vo.setUrl(baseUrl + "/attachment/view/" + entity.getId());
         }
         // 所有附件都可下载
         vo.setDownloadUrl(baseUrl + "/attachment/download/" + entity.getId());

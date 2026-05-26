@@ -44,6 +44,20 @@ public class ForumAttachmentController {
     private String uploadPath;
 
     /**
+     * 在线查看附件（图片预览）
+     * @param id 附件ID
+     * @param response HTTP响应
+     */
+    @GetMapping("/view/{id}")
+    public void view(@PathVariable Long id, HttpServletResponse response) {
+        ForumAttachment attachment = getVisibleAttachment(id);
+        if (!AttachmentConstants.FILE_TYPE_IMAGE.equals(attachment.getFileType())) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "仅支持预览图片类型附件");
+        }
+        writeFile(attachment, response, "inline");
+    }
+
+    /**
      * 下载附件
      * @param id 附件ID
      * @param response HTTP响应
@@ -51,6 +65,13 @@ public class ForumAttachmentController {
     @GetMapping("/download/{id}")
     public void download(@PathVariable Long id, HttpServletResponse response) {
         ForumAttachment attachment = getVisibleAttachment(id);
+        writeFile(attachment, response, "attachment");
+    }
+
+    /**
+     * 输出文件流
+     */
+    private void writeFile(ForumAttachment attachment, HttpServletResponse response, String disposition) {
         File file = new File(uploadPath, attachment.getFilePath());
 
         if (!file.exists()) {
@@ -72,11 +93,10 @@ public class ForumAttachmentController {
              OutputStream os = response.getOutputStream()) {
 
             response.setContentType(contentType);
-            // RFC 5987: filename* 支持中文文件名，filename 兜底
             String encodedFileName = URLEncoder.encode(attachment.getFileName(), StandardCharsets.UTF_8)
                     .replace("+", "%20");
             response.setHeader("Content-Disposition",
-                    "attachment; filename=\"" + encodedFileName + "\"; filename*=UTF-8''" + encodedFileName);
+                    disposition + "; filename=\"" + encodedFileName + "\"; filename*=UTF-8''" + encodedFileName);
             response.setContentLengthLong(file.length());
 
             byte[] buffer = new byte[4096];
@@ -87,9 +107,9 @@ public class ForumAttachmentController {
             os.flush();
 
         } catch (IOException e) {
-            log.error("文件下载失败：{}", e.getMessage(), e);
+            log.error("文件输出失败：{}", e.getMessage(), e);
             try {
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "文件下载失败");
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "文件输出失败");
             } catch (IOException ex) {
                 log.error("发送错误响应失败", ex);
             }

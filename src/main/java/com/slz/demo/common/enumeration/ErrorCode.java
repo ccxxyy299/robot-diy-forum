@@ -35,7 +35,7 @@ public enum ErrorCode {
     INVALID_STATUS(400, "状态值只能是0或1"),
     FILE_EMPTY(400, "上传文件不能为空"),
     FILE_TOO_LARGE(400, "文件大小不能超过5MB"),
-    FILE_TYPE_INVALID(400, "仅支持上传图片文件"),
+    FILE_TYPE_INVALID(400, "不支持该附件类型上传"),
     FILE_UPLOAD_FAILED(500, "文件上传失败"),
     ATTACHMENT_NOT_FOUND(400, "附件不存在"),
     PARAM_ERROR(400, "参数错误"),
