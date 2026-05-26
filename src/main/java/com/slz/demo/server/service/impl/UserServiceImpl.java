@@ -38,6 +38,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Value("${upload.path}")
     private String uploadPath;
 
+    @Value("${upload.base-url}")
+    private String uploadBaseUrl;
+
     @Value("${upload.max-image-size}")
     private DataSize maxImageSize;
 
@@ -85,7 +88,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         UserVO vo = new UserVO();
         BeanUtils.copyProperties(user, vo);
         if (user.getAvatar() != null) {
-            vo.setAvatar("/upload/" + user.getAvatar());
+            vo.setAvatar(uploadBaseUrl + "/upload/" + user.getAvatar());
         }
         return vo;
     }
@@ -181,7 +184,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             UserVO vo = new UserVO();
             BeanUtils.copyProperties(user, vo);
             if (user.getAvatar() != null) {
-                vo.setAvatar("/upload/" + user.getAvatar());
+                vo.setAvatar(uploadBaseUrl + "/upload/" + user.getAvatar());
             }
             return vo;
         }).toList());

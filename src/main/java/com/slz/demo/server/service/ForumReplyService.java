@@ -2,6 +2,7 @@ package com.slz.demo.server.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.slz.demo.pojo.dto.ReplyAndAttachmentDTO;
 import com.slz.demo.pojo.dto.ReplyDTO;
 import com.slz.demo.pojo.dto.ReplyTopQueryDTO;
 import com.slz.demo.pojo.dto.ReplyChildQueryDTO;
@@ -14,9 +15,11 @@ import com.slz.demo.pojo.vo.ReplyVO;
 public interface ForumReplyService extends IService<ForumReply> {
 
     /**
-     * 新增回复
+     * 新增回复（支持附件）
+     * @param dto 回复信息 + 附件
+     * @return 新增的回复ID
      */
-    void add(ReplyDTO dto);
+    Long add(ReplyAndAttachmentDTO dto);
 
     /**
      * 删除回复

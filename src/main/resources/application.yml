@@ -36,7 +36,11 @@ jwt:
 
 upload:
   path: ${UPLOAD_PATH}
+  base-url: ${UPLOAD_BASE_URL}
   max-image-size: ${UPLOAD_MAX_SIZE}
+  max-file-size: ${UPLOAD_FILE_MAX_SIZE}
+  max-image-count: 9
+  max-file-count: 5
 
 logging:
   level:

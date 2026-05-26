@@ -6,8 +6,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.slz.demo.common.enumeration.ErrorCode;
 import com.slz.demo.common.exception.BusinessException;
 import com.slz.demo.common.util.UserContext;
+import com.slz.demo.pojo.dto.TopicAndAttachmentDTO;
 import com.slz.demo.pojo.dto.TopicDTO;
 import com.slz.demo.pojo.dto.TopicQueryDTO;
+import com.slz.demo.pojo.dto.TopicUpdateAndAttachmentDTO;
 import com.slz.demo.pojo.entity.ForumCategory;
 import com.slz.demo.pojo.entity.ForumTag;
 import com.slz.demo.pojo.entity.ForumTopic;
@@ -17,6 +19,8 @@ import com.slz.demo.pojo.vo.TagVO;
 import com.slz.demo.pojo.vo.TopicVO;
 import com.slz.demo.server.mapper.ForumTopicMapper;
 import com.slz.demo.server.mapper.ForumTopicTagMapper;
+import com.slz.demo.server.constant.AttachmentConstants;
+import com.slz.demo.server.service.ForumAttachmentService;
 import com.slz.demo.server.service.ForumCategoryService;
 import com.slz.demo.server.service.ForumPermissionService;
 import com.slz.demo.server.service.ForumTagService;
@@ -34,6 +38,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.slz.demo.pojo.vo.AttachmentVO;
+
 /**
  * 主题帖 Service 实现
  */
@@ -47,46 +53,40 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
     private final ForumTagService tagService;
     private final UserService userService;
     private final ForumPermissionService forumPermissionService;
+    private final ForumAttachmentService attachmentService;
 
     @Override
     @Transactional
-    public void add(TopicDTO dto) {
+    public Long add(TopicAndAttachmentDTO dto) {
+        TopicDTO topicDTO = dto.getTopic();
+
         // 验证分类是否存在
-        ForumCategory category = categoryService.getById(dto.getCategoryId());
+        ForumCategory category = categoryService.getById(topicDTO.getCategoryId());
         if (category == null) {
             throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
 
         // 验证标签是否存在，去重避免重复插入
-        if (dto.getTagIds() != null && !dto.getTagIds().isEmpty()) {
-            List<Long> distinctTagIds = dto.getTagIds().stream().distinct().toList();
-            for (Long tagId : distinctTagIds) {
-                if (!tagService.lambdaQuery().eq(ForumTag::getId, tagId).exists()) {
-                    throw new BusinessException(ErrorCode.TAG_NOT_FOUND);
-                }
-            }
-        }
+        validateAndSaveTags(topicDTO);
 
         // 创建主题帖
         ForumTopic topic = new ForumTopic();
-        topic.setCategoryId(dto.getCategoryId());
+        topic.setCategoryId(topicDTO.getCategoryId());
         topic.setCreatorId(UserContext.get().getUserId());
-        topic.setTitle(dto.getTitle());
-        topic.setContent(dto.getContent());
+        topic.setTitle(topicDTO.getTitle());
+        topic.setContent(topicDTO.getContent());
         topic.setStatus(1);
         topic.setViewCount(0);
         topic.setReplyCount(0);
         save(topic);
 
         // 保存标签关联
-        if (dto.getTagIds() != null && !dto.getTagIds().isEmpty()) {
-            dto.getTagIds().stream().distinct().forEach(tagId -> {
-                ForumTopicTag topicTag = new ForumTopicTag();
-                topicTag.setTopicId(topic.getId());
-                topicTag.setTagId(tagId);
-                topicTagMapper.insert(topicTag);
-            });
-        }
+        saveTagRelations(topic.getId(), topicDTO.getTagIds());
+
+        // 保存附件
+        attachmentService.saveAttachments(dto.getAttachments(), AttachmentConstants.RELATED_TYPE_TOPIC, topic.getId());
+
+        return topic.getId();
     }
 
     @Override
@@ -99,6 +99,9 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
 
         forumPermissionService.checkCanDeleteTopic(topic);
 
+        // 删除关联附件（磁盘文件+数据库记录）
+        attachmentService.deleteByRelated(AttachmentConstants.RELATED_TYPE_TOPIC, id);
+
         removeById(id);
 
         // 删除标签关联
@@ -109,7 +112,7 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
 
     @Override
     @Transactional
-    public void update(Long id, TopicDTO dto) {
+    public void update(Long id, TopicUpdateAndAttachmentDTO dto) {
         ForumTopic topic = getById(id);
         if (topic == null) {
             throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
@@ -117,42 +120,32 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
 
         forumPermissionService.checkCanUpdateTopic(topic);
 
-        ForumCategory category = categoryService.getById(dto.getCategoryId());
+        TopicDTO topicDTO = dto.getTopic();
+        ForumCategory category = categoryService.getById(topicDTO.getCategoryId());
         if (category == null) {
             throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
 
-        // 验证标签是否存在，去重避免重复插入
-        if (dto.getTagIds() != null && !dto.getTagIds().isEmpty()) {
-            List<Long> distinctTagIds = dto.getTagIds().stream().distinct().toList();
-            for (Long tagId : distinctTagIds) {
-                if (!tagService.lambdaQuery().eq(ForumTag::getId, tagId).exists()) {
-                    throw new BusinessException(ErrorCode.TAG_NOT_FOUND);
-                }
-            }
-        }
+        validateTags(topicDTO.getTagIds());
 
         // 更新主题帖
-        topic.setCategoryId(dto.getCategoryId());
-        topic.setTitle(dto.getTitle());
-        topic.setContent(dto.getContent());
+        topic.setCategoryId(topicDTO.getCategoryId());
+        topic.setTitle(topicDTO.getTitle());
+        topic.setContent(topicDTO.getContent());
         topic.setUpdateTime(LocalDateTime.now());
         updateById(topic);
 
-        // 删除旧的标签关联
+        // 删除旧的标签关联并保存新的
         LambdaQueryWrapper<ForumTopicTag> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ForumTopicTag::getTopicId, id);
         topicTagMapper.delete(wrapper);
+        saveTagRelations(id, topicDTO.getTagIds());
 
-        // 保存新的标签关联
-        if (dto.getTagIds() != null && !dto.getTagIds().isEmpty()) {
-            dto.getTagIds().stream().distinct().forEach(tagId -> {
-                ForumTopicTag topicTag = new ForumTopicTag();
-                topicTag.setTopicId(id);
-                topicTag.setTagId(tagId);
-                topicTagMapper.insert(topicTag);
-            });
-        }
+        // 删除指定附件
+        attachmentService.deleteByIds(dto.getDeleteAttachmentIds(), id);
+
+        // 保存新增附件
+        attachmentService.saveAttachments(dto.getAttachments(), AttachmentConstants.RELATED_TYPE_TOPIC, id);
     }
 
     @Override
@@ -260,6 +253,9 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
             }
         }
         vo.setTags(tags);
+
+        // 查询附件列表
+        vo.setAttachments(attachmentService.listByRelated(AttachmentConstants.RELATED_TYPE_TOPIC, id));
 
         return vo;
     }
@@ -379,8 +375,13 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
                 : userService.listByIds(allUserIds).stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
 
+        // 批量查询附件并按主题帖ID分组
+        List<Long> topicIds = entities.stream().map(ForumTopic::getId).toList();
+        Map<Long, List<AttachmentVO>> topicAttachmentsMap = attachmentService.mapByRelatedIds(
+                AttachmentConstants.RELATED_TYPE_TOPIC, topicIds);
+
         return entities.stream()
-                .map(entity -> toVO(entity, userMap, categoryMap, tagMap, topicTagIdsMap))
+                .map(entity -> toVO(entity, userMap, categoryMap, tagMap, topicTagIdsMap, topicAttachmentsMap))
                 .toList();
     }
 
@@ -388,7 +389,8 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
                          Map<Long, User> userMap,
                          Map<Long, ForumCategory> categoryMap,
                          Map<Long, ForumTag> tagMap,
-                         Map<Long, List<Long>> topicTagIdsMap) {
+                         Map<Long, List<Long>> topicTagIdsMap,
+                         Map<Long, List<AttachmentVO>> topicAttachmentsMap) {
         TopicVO vo = new TopicVO();
         BeanUtils.copyProperties(entity, vo);
 
@@ -426,6 +428,51 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
             vo.setTags(tags);
         }
 
+        // 设置附件列表
+        List<AttachmentVO> attachments = topicAttachmentsMap.get(entity.getId());
+        if (attachments != null) {
+            vo.setAttachments(attachments);
+        }
+
         return vo;
+    }
+
+    // ==================== 附件相关辅助方法 ====================
+
+    /**
+     * 校验标签是否存在
+     */
+    private void validateTags(List<Long> tagIds) {
+        if (tagIds == null || tagIds.isEmpty()) {
+            return;
+        }
+        List<Long> distinctTagIds = tagIds.stream().distinct().toList();
+        for (Long tagId : distinctTagIds) {
+            if (!tagService.lambdaQuery().eq(ForumTag::getId, tagId).exists()) {
+                throw new BusinessException(ErrorCode.TAG_NOT_FOUND);
+            }
+        }
+    }
+
+    /**
+     * 校验标签并保存关联
+     */
+    private void validateAndSaveTags(TopicDTO dto) {
+        validateTags(dto.getTagIds());
+    }
+
+    /**
+     * 保存标签关联
+     */
+    private void saveTagRelations(Long topicId, List<Long> tagIds) {
+        if (tagIds == null || tagIds.isEmpty()) {
+            return;
+        }
+        tagIds.stream().distinct().forEach(tagId -> {
+            ForumTopicTag topicTag = new ForumTopicTag();
+            topicTag.setTopicId(topicId);
+            topicTag.setTagId(tagId);
+            topicTagMapper.insert(topicTag);
+        });
     }
 }

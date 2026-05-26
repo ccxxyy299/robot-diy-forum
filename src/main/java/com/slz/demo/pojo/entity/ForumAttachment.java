@@ -46,10 +46,4 @@ public class ForumAttachment {
 
     @Column(value = "create_time", type = "datetime", notNull = true, defaultValue = "CURRENT_TIMESTAMP", comment = "创建时间")
     private LocalDateTime createTime;
-
-    @Column(value = "update_time", type = "datetime", comment = "更新时间")
-    private LocalDateTime updateTime;
-
-    @Column(type = "tinyint", notNull = true, defaultValue = "0", comment = "逻辑删除: 0未删除 1已删除")
-    private Integer isDeleted;
 }

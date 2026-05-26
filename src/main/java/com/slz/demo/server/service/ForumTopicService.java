@@ -2,8 +2,10 @@ package com.slz.demo.server.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.slz.demo.pojo.dto.TopicAndAttachmentDTO;
 import com.slz.demo.pojo.dto.TopicDTO;
 import com.slz.demo.pojo.dto.TopicQueryDTO;
+import com.slz.demo.pojo.dto.TopicUpdateAndAttachmentDTO;
 import com.slz.demo.pojo.entity.ForumTopic;
 import com.slz.demo.pojo.vo.TopicVO;
 
@@ -15,10 +17,11 @@ import java.util.List;
 public interface ForumTopicService extends IService<ForumTopic> {
 
     /**
-     * 新增主题帖
-     * @param dto 主题帖信息
+     * 新增主题帖（支持附件）
+     * @param dto 主题帖信息 + 附件
+     * @return 新增的主题帖ID
      */
-    void add(TopicDTO dto);
+    Long add(TopicAndAttachmentDTO dto);
 
     /**
      * 删除主题帖
@@ -27,11 +30,11 @@ public interface ForumTopicService extends IService<ForumTopic> {
     void delete(Long id);
 
     /**
-     * 修改主题帖
+     * 修改主题帖（支持附件）
      * @param id 主题帖ID
-     * @param dto 主题帖信息
+     * @param dto 主题帖信息 + 附件
      */
-    void update(Long id, TopicDTO dto);
+    void update(Long id, TopicUpdateAndAttachmentDTO dto);
 
     /**
      * 查询所有主题帖

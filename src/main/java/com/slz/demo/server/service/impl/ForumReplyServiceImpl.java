@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.slz.demo.common.enumeration.ErrorCode;
 import com.slz.demo.common.exception.BusinessException;
 import com.slz.demo.common.util.UserContext;
+import com.slz.demo.pojo.dto.ReplyAndAttachmentDTO;
 import com.slz.demo.pojo.dto.ReplyChildQueryDTO;
 import com.slz.demo.pojo.dto.ReplyDTO;
 import com.slz.demo.pojo.dto.ReplyTopQueryDTO;
@@ -16,6 +17,8 @@ import com.slz.demo.pojo.vo.ReplyVO;
 import com.slz.demo.server.constant.ForumConstants;
 import com.slz.demo.server.mapper.ForumReplyMapper;
 import com.slz.demo.server.mapper.ForumTopicMapper;
+import com.slz.demo.server.constant.AttachmentConstants;
+import com.slz.demo.server.service.ForumAttachmentService;
 import com.slz.demo.server.service.ForumPermissionService;
 import com.slz.demo.server.service.ForumReplyService;
 import com.slz.demo.server.service.ForumTopicService;
@@ -25,10 +28,13 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import com.slz.demo.pojo.vo.AttachmentVO;
 
 /**
  * 回复 Service 实现
@@ -41,17 +47,20 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
     private final ForumTopicMapper topicMapper;
     private final UserService userService;
     private final ForumPermissionService forumPermissionService;
+    private final ForumAttachmentService attachmentService;
 
     @Override
     @Transactional
-    public void add(ReplyDTO dto) {
+    public Long add(ReplyAndAttachmentDTO dto) {
+        ReplyDTO replyDTO = dto.getReply();
+
         // 验证主题帖是否存在
-        ForumTopic topic = topicService.getById(dto.getTopicId());
+        ForumTopic topic = topicService.getById(replyDTO.getTopicId());
         if (topic == null) {
             throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
         }
 
-        Long parentReplyId = dto.getParentReplyId() != null ? dto.getParentReplyId() : 0L;
+        Long parentReplyId = replyDTO.getParentReplyId() != null ? replyDTO.getParentReplyId() : 0L;
 
         // 确定 replyToUserId
         Long replyToUserId;
@@ -65,7 +74,7 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
                 throw new BusinessException(ErrorCode.REPLY_NOT_FOUND);
             }
             // 校验父回复是否属于当前帖子
-            if (!parentReply.getTopicId().equals(dto.getTopicId())) {
+            if (!parentReply.getTopicId().equals(replyDTO.getTopicId())) {
                 throw new BusinessException(ErrorCode.PARENT_REPLY_MISMATCH);
             }
             replyToUserId = parentReply.getCreatorId();
@@ -73,15 +82,20 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
 
         // 创建回复
         ForumReply reply = new ForumReply();
-        reply.setTopicId(dto.getTopicId());
+        reply.setTopicId(replyDTO.getTopicId());
         reply.setCreatorId(UserContext.get().getUserId());
         reply.setParentReplyId(parentReplyId);
         reply.setReplyToUserId(replyToUserId);
-        reply.setContent(dto.getContent());
+        reply.setContent(replyDTO.getContent());
         save(reply);
 
         // 更新主题帖回复数
-        topicMapper.incrementReplyCount(dto.getTopicId());
+        topicMapper.incrementReplyCount(replyDTO.getTopicId());
+
+        // 保存附件
+        attachmentService.saveAttachments(dto.getAttachments(), AttachmentConstants.RELATED_TYPE_REPLY, reply.getId());
+
+        return reply.getId();
     }
 
     @Override
@@ -98,6 +112,9 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
         }
 
         forumPermissionService.checkCanDeleteReply(reply, topic);
+
+        // 删除关联附件（磁盘文件+数据库记录）
+        attachmentService.deleteByRelated(AttachmentConstants.RELATED_TYPE_REPLY, id);
 
         removeById(id);
 
@@ -189,12 +206,18 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
                 : userService.listByIds(userIds).stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
 
+        // 批量查询附件并按回复ID分组
+        List<Long> replyIds = entities.stream().map(ForumReply::getId).toList();
+        Map<Long, List<AttachmentVO>> replyAttachmentsMap = attachmentService.mapByRelatedIds(
+                AttachmentConstants.RELATED_TYPE_REPLY, replyIds);
+
         return entities.stream()
-                .map(entity -> toVO(entity, userMap))
+                .map(entity -> toVO(entity, userMap, replyAttachmentsMap))
                 .toList();
     }
 
-    private ReplyVO toVO(ForumReply entity, Map<Long, User> userMap) {
+    private ReplyVO toVO(ForumReply entity, Map<Long, User> userMap,
+                         Map<Long, List<AttachmentVO>> replyAttachmentsMap) {
         ReplyVO vo = new ReplyVO();
         BeanUtils.copyProperties(entity, vo);
 
@@ -213,6 +236,12 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
         User replyToUser = userMap.get(entity.getReplyToUserId());
         if (replyToUser != null) {
             vo.setReplyToUserNickname(replyToUser.getNickname());
+        }
+
+        // 设置附件列表
+        List<AttachmentVO> attachments = replyAttachmentsMap.get(entity.getId());
+        if (attachments != null) {
+            vo.setAttachments(attachments);
         }
 
         return vo;

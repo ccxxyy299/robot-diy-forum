@@ -3,6 +3,7 @@ package com.slz.demo.pojo.vo;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 回复返回
@@ -31,4 +32,9 @@ public class ReplyVO {
     private LocalDateTime updateTime;
 
     private Integer isDeleted;
+
+    /**
+     * 附件列表
+     */
+    private List<AttachmentVO> attachments;
 }

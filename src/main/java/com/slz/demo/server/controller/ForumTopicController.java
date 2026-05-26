@@ -3,8 +3,10 @@ package com.slz.demo.server.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.slz.demo.common.enumeration.UserRole;
 import com.slz.demo.common.result.Result;
+import com.slz.demo.pojo.dto.TopicAndAttachmentDTO;
 import com.slz.demo.pojo.dto.TopicDTO;
 import com.slz.demo.pojo.dto.TopicQueryDTO;
+import com.slz.demo.pojo.dto.TopicUpdateAndAttachmentDTO;
 import com.slz.demo.pojo.vo.TopicVO;
 import com.slz.demo.server.annotation.RoleRequired;
 import com.slz.demo.server.service.ForumTopicService;
@@ -12,6 +14,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -34,12 +37,12 @@ public class ForumTopicController {
 
     /**
      * 新增主题帖
-     * @param dto 主题帖信息
-     * @return 结果
+     * @param dto 主题帖信息 + 附件
+     * @return 新增的主题帖ID
      */
     @PostMapping
     @RoleRequired(UserRole.USER)
-    public Result<String> add(@Valid @RequestBody TopicDTO dto) {
+    public Result<String> add(@ModelAttribute TopicAndAttachmentDTO dto) {
         forumTopicService.add(dto);
         return Result.success("新增成功");
     }
@@ -59,12 +62,12 @@ public class ForumTopicController {
     /**
      * 修改主题帖
      * @param id 主题帖ID
-     * @param dto 主题帖信息
+     * @param dto 主题帖信息 + 附件
      * @return 结果
      */
     @PutMapping("/{id}")
     @RoleRequired(UserRole.USER)
-    public Result<String> update(@PathVariable Long id, @Valid @RequestBody TopicDTO dto) {
+    public Result<String> update(@PathVariable Long id, @ModelAttribute TopicUpdateAndAttachmentDTO dto) {
         forumTopicService.update(id, dto);
         return Result.success("修改成功");
     }

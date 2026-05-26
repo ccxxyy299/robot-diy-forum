@@ -38,6 +38,11 @@ public class TopicVO {
     private Integer isDeleted;
 
     /**
+     * 附件列表
+     */
+    private List<AttachmentVO> attachments;
+
+    /**
      * 标签列表
      */
     private List<TagVO> tags;

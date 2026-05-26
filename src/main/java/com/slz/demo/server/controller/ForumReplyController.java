@@ -3,6 +3,7 @@ package com.slz.demo.server.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.slz.demo.common.enumeration.UserRole;
 import com.slz.demo.common.result.Result;
+import com.slz.demo.pojo.dto.ReplyAndAttachmentDTO;
 import com.slz.demo.pojo.dto.ReplyChildQueryDTO;
 import com.slz.demo.pojo.dto.ReplyDTO;
 import com.slz.demo.pojo.dto.ReplyTopQueryDTO;
@@ -13,6 +14,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,12 +34,12 @@ public class ForumReplyController {
 
     /**
      * 新增回复
-     * @param dto 回复信息
-     * @return 结果
+     * @param dto 回复信息 + 附件
+     * @return 新增的回复ID
      */
     @PostMapping
     @RoleRequired(UserRole.USER)
-    public Result<String> add(@Valid @RequestBody ReplyDTO dto) {
+    public Result<String> add(@ModelAttribute ReplyAndAttachmentDTO dto) {
         forumReplyService.add(dto);
         return Result.success("新增成功");
     }

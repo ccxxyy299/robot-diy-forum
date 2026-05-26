@@ -37,6 +37,8 @@ public enum ErrorCode {
     FILE_TOO_LARGE(400, "文件大小不能超过5MB"),
     FILE_TYPE_INVALID(400, "仅支持上传图片文件"),
     FILE_UPLOAD_FAILED(500, "文件上传失败"),
+    ATTACHMENT_NOT_FOUND(400, "附件不存在"),
+    PARAM_ERROR(400, "参数错误"),
     SERVER_ERROR(500, "服务器内部错误");
 
     private final Integer code;
