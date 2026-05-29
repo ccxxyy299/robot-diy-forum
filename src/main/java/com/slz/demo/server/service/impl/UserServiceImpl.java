@@ -69,11 +69,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public String login(LoginDTO dto) {
         User user = lambdaQuery().eq(User::getEmail, dto.getEmail()).one();
-        if (user == null) {
-            throw new BusinessException(ErrorCode.EMAIL_NOT_FOUND);
-        }
-        if (!passwordUtil.matches(dto.getPassword(), user.getPassword())) {
-            throw new BusinessException(ErrorCode.PASSWORD_ERROR);
+        if (user == null || !passwordUtil.matches(dto.getPassword(), user.getPassword())) {
+            throw new BusinessException(ErrorCode.LOGIN_FAILED);
         }
         return jwtUtil.generateToken(user.getId(), user.getRole());
     }
@@ -122,6 +119,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 user.setNickname(nickname);
             }
             if (email != null && !email.isBlank()) {
+                if (lambdaQuery().eq(User::getEmail, email).ne(User::getId, id).exists()) {
+                    throw new BusinessException(ErrorCode.EMAIL_REGISTERED);
+                }
                 user.setEmail(email);
             }
             user.setUpdateTime(LocalDateTime.now());
