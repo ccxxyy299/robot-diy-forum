@@ -83,7 +83,7 @@ public class ForumReplyController {
      * @return 分页结果
      */
     @GetMapping("/my")
-    @RoleRequired(UserRole.USER)
+    @RoleRequired(value = UserRole.USER, allowDisabled = true)
     public Result<Page<ReplyVO>> myReplies(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {

@@ -15,6 +15,7 @@ public enum ErrorCode {
     EMAIL_NOT_FOUND(400, "邮箱未注册"),
     PASSWORD_ERROR(400, "密码错误"),
     USER_NOT_FOUND(400, "用户不存在"),
+    USER_DISABLED(403, "该账号已被禁用"),
     UNAUTHORIZED(401, "当前用户未登录"),
     TOKEN_INVALID(401, "token无效或已过期"),
     NO_PERMISSION(403, "无操作权限"),

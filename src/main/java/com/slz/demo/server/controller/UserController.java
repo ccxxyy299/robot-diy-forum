@@ -57,7 +57,7 @@ public class UserController {
      * @return
      */
     @GetMapping("/me")
-    @RoleRequired(UserRole.USER)
+    @RoleRequired(value = UserRole.USER, allowDisabled = true)
     public Result<UserVO> me() {
         return Result.success(userService.getCurrentUser());
     }

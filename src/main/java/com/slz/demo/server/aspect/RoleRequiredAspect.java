@@ -5,7 +5,10 @@ import com.slz.demo.common.enumeration.UserRole;
 import com.slz.demo.common.exception.BusinessException;
 import com.slz.demo.common.util.UserContext;
 import com.slz.demo.pojo.ao.RoleAO;
+import com.slz.demo.pojo.entity.User;
 import com.slz.demo.server.annotation.RoleRequired;
+import com.slz.demo.server.mapper.UserMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -17,7 +20,10 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Aspect
 @Component
+@RequiredArgsConstructor
 public class RoleRequiredAspect {
+
+    private final UserMapper userMapper;
 
     @Before("@annotation(roleRequired) && within(com.slz.demo.server.controller..*)")
     public void before(RoleRequired roleRequired) {
@@ -25,6 +31,14 @@ public class RoleRequiredAspect {
         if (currentUser == null) {
             log.warn("权限校验拒绝: 未登录");
             throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+
+        if (!roleRequired.allowDisabled()) {
+            User user = userMapper.selectById(currentUser.getUserId());
+            if (user == null || user.getStatus() == 0) {
+                log.warn("权限校验拒绝: 用户不存在或已被禁用, userId={}", currentUser.getUserId());
+                throw new BusinessException(ErrorCode.USER_DISABLED);
+            }
         }
 
         UserRole requiredRole = roleRequired.value();

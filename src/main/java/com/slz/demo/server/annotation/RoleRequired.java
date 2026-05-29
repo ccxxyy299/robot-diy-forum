@@ -15,4 +15,6 @@ import java.lang.annotation.Target;
 public @interface RoleRequired {
 
     UserRole value();
+
+    boolean allowDisabled() default false;
 }

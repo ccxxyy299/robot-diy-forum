@@ -122,7 +122,7 @@ public class ForumTopicController {
      * @return 分页结果
      */
     @GetMapping("/my")
-    @RoleRequired(UserRole.USER)
+    @RoleRequired(value = UserRole.USER, allowDisabled = true)
     public Result<Page<TopicVO>> myTopics(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
