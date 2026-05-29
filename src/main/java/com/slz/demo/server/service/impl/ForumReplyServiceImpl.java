@@ -197,7 +197,9 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
         Set<Long> userIds = new java.util.HashSet<>();
         entities.forEach(reply -> {
             userIds.add(reply.getCreatorId());
-            userIds.add(reply.getReplyToUserId());
+            if (reply.getReplyToUserId() != null) {
+                userIds.add(reply.getReplyToUserId());
+            }
         });
 
         // 批量查询用户

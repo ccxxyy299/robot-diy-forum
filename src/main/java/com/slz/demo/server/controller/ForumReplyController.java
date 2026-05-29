@@ -39,7 +39,7 @@ public class ForumReplyController {
      */
     @PostMapping
     @RoleRequired(UserRole.USER)
-    public Result<String> add(@ModelAttribute ReplyAndAttachmentDTO dto) {
+    public Result<String> add(@Valid @ModelAttribute ReplyAndAttachmentDTO dto) {
         forumReplyService.add(dto);
         return Result.success("新增成功");
     }

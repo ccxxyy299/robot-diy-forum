@@ -42,7 +42,7 @@ public class ForumTopicController {
      */
     @PostMapping
     @RoleRequired(UserRole.USER)
-    public Result<String> add(@ModelAttribute TopicAndAttachmentDTO dto) {
+    public Result<String> add(@Valid @ModelAttribute TopicAndAttachmentDTO dto) {
         forumTopicService.add(dto);
         return Result.success("新增成功");
     }
@@ -67,7 +67,7 @@ public class ForumTopicController {
      */
     @PutMapping("/{id}")
     @RoleRequired(UserRole.USER)
-    public Result<String> update(@PathVariable Long id, @ModelAttribute TopicUpdateAndAttachmentDTO dto) {
+    public Result<String> update(@PathVariable Long id, @Valid @ModelAttribute TopicUpdateAndAttachmentDTO dto) {
         forumTopicService.update(id, dto);
         return Result.success("修改成功");
     }
