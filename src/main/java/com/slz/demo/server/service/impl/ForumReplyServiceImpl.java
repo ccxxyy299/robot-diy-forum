@@ -53,6 +53,9 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
     @Transactional
     public Long add(ReplyAndAttachmentDTO dto) {
         ReplyDTO replyDTO = dto.getReply();
+        if (replyDTO == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
 
         // 验证主题帖是否存在且可见
         ForumTopic topic = topicService.getById(replyDTO.getTopicId());
@@ -242,9 +245,7 @@ public class ForumReplyServiceImpl extends ServiceImpl<ForumReplyMapper, ForumRe
 
         // 设置附件列表
         List<AttachmentVO> attachments = replyAttachmentsMap.get(entity.getId());
-        if (attachments != null) {
-            vo.setAttachments(attachments);
-        }
+        vo.setAttachments(attachments != null ? attachments : new ArrayList<>());
 
         return vo;
     }

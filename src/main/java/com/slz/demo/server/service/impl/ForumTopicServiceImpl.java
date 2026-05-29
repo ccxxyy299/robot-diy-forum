@@ -407,9 +407,9 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
         }
 
         // 设置标签列表（使用预先查询的标签ID映射）
+        List<TagVO> tags = new ArrayList<>();
         List<Long> tagIds = topicTagIdsMap.get(entity.getId());
         if (tagIds != null && !tagIds.isEmpty()) {
-            List<TagVO> tags = new ArrayList<>();
             for (Long tagId : tagIds) {
                 ForumTag tag = tagMap.get(tagId);
                 if (tag != null) {
@@ -425,14 +425,12 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
                     tags.add(tagVO);
                 }
             }
-            vo.setTags(tags);
         }
+        vo.setTags(tags);
 
         // 设置附件列表
         List<AttachmentVO> attachments = topicAttachmentsMap.get(entity.getId());
-        if (attachments != null) {
-            vo.setAttachments(attachments);
-        }
+        vo.setAttachments(attachments != null ? attachments : new ArrayList<>());
 
         return vo;
     }
