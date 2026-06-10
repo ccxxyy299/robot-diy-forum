@@ -2,6 +2,7 @@ package com.slz.demo.server.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.slz.demo.pojo.dto.AdminTopicQueryDTO;
 import com.slz.demo.pojo.dto.TopicAndAttachmentDTO;
 import com.slz.demo.pojo.dto.TopicDTO;
 import com.slz.demo.pojo.dto.TopicQueryDTO;
@@ -70,4 +71,11 @@ public interface ForumTopicService extends IService<ForumTopic> {
      * @return 分页结果
      */
     Page<TopicVO> myTopics(Integer pageNum, Integer pageSize);
+
+    /**
+     * 管理员分页查询主题帖（可查看全部状态）
+     * @param queryDTO 查询条件
+     * @return 分页结果
+     */
+    Page<TopicVO> adminPage(AdminTopicQueryDTO queryDTO);
 }

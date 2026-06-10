@@ -10,6 +10,7 @@ import com.slz.demo.pojo.dto.TopicAndAttachmentDTO;
 import com.slz.demo.pojo.dto.TopicDTO;
 import com.slz.demo.pojo.dto.TopicQueryDTO;
 import com.slz.demo.pojo.dto.TopicUpdateAndAttachmentDTO;
+import com.slz.demo.pojo.dto.AdminTopicQueryDTO;
 import com.slz.demo.pojo.entity.ForumCategory;
 import com.slz.demo.pojo.entity.ForumTag;
 import com.slz.demo.pojo.entity.ForumTopic;
@@ -294,6 +295,42 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
         return voPage;
     }
 
+    @Override
+    public Page<TopicVO> adminPage(AdminTopicQueryDTO queryDTO) {
+        Page<ForumTopic> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
+        LambdaQueryWrapper<ForumTopic> wrapper = new LambdaQueryWrapper<>();
+
+        // 管理员可按状态筛选，不传则查询全部
+        if (queryDTO.getStatus() != null) {
+            wrapper.eq(ForumTopic::getStatus, queryDTO.getStatus());
+        }
+
+        // 处理分类条件
+        List<Long> categoryIds = resolveAdminCategoryIds(queryDTO);
+        if (categoryIds != null) {
+            if (categoryIds.isEmpty()) {
+                return new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
+            }
+            wrapper.in(ForumTopic::getCategoryId, categoryIds);
+        }
+
+        // 处理标签条件
+        if (queryDTO.getTagId() != null) {
+            List<Long> topicIds = topicTagMapper.selectTopicIdsByTagId(queryDTO.getTagId());
+            if (topicIds == null || topicIds.isEmpty()) {
+                return new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
+            }
+            wrapper.in(ForumTopic::getId, topicIds);
+        }
+
+        wrapper.orderByDesc(ForumTopic::getCreateTime);
+        Page<ForumTopic> topicPage = page(page, wrapper);
+
+        Page<TopicVO> voPage = new Page<>(topicPage.getCurrent(), topicPage.getSize(), topicPage.getTotal());
+        voPage.setRecords(toVOList(topicPage.getRecords()));
+        return voPage;
+    }
+
     /**
      * 解析分类ID列表
      * 如果传了categoryId，直接使用
@@ -320,6 +357,25 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
         }
 
         // 都没传，则查询全部（不限制分类）
+        return null;
+    }
+
+    /**
+     * 管理员查询：解析分类ID列表
+     */
+    private List<Long> resolveAdminCategoryIds(AdminTopicQueryDTO queryDTO) {
+        if (queryDTO.getCategoryId() != null) {
+            return List.of(queryDTO.getCategoryId());
+        }
+        if (queryDTO.getParentId() != null) {
+            List<ForumCategory> children = categoryService.lambdaQuery()
+                    .eq(ForumCategory::getParentId, queryDTO.getParentId())
+                    .list();
+            if (children.isEmpty()) {
+                return List.of();
+            }
+            return children.stream().map(ForumCategory::getId).toList();
+        }
         return null;
     }
 

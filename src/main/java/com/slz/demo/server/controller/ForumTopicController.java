@@ -7,6 +7,7 @@ import com.slz.demo.pojo.dto.TopicAndAttachmentDTO;
 import com.slz.demo.pojo.dto.TopicDTO;
 import com.slz.demo.pojo.dto.TopicQueryDTO;
 import com.slz.demo.pojo.dto.TopicUpdateAndAttachmentDTO;
+import com.slz.demo.pojo.dto.AdminTopicQueryDTO;
 import com.slz.demo.pojo.vo.TopicVO;
 import com.slz.demo.server.annotation.RoleRequired;
 import com.slz.demo.server.service.ForumTopicService;
@@ -90,6 +91,17 @@ public class ForumTopicController {
     @PostMapping("/page")
     public Result<Page<TopicVO>> page(@RequestBody TopicQueryDTO queryDTO) {
         return Result.success(forumTopicService.page(queryDTO));
+    }
+
+    /**
+     * 管理员分页查询主题帖（可查看显示/隐藏的帖子）
+     * @param queryDTO 查询参数（status可选：1=显示, 0=隐藏, 不传=全部）
+     * @return 分页结果
+     */
+    @PostMapping("/admin/page")
+    @RoleRequired(UserRole.ADMIN)
+    public Result<Page<TopicVO>> adminPage(@RequestBody AdminTopicQueryDTO queryDTO) {
+        return Result.success(forumTopicService.adminPage(queryDTO));
     }
 
     /**
