@@ -17,36 +17,33 @@ import com.slz.demo.pojo.dto.UserPageQueryDTO;
 import com.slz.demo.pojo.entity.User;
 import com.slz.demo.pojo.vo.UserVO;
 import com.slz.demo.server.mapper.UserMapper;
+import com.slz.demo.server.service.MinioService;
 import com.slz.demo.server.service.UserService;
+import com.slz.demo.server.config.MinioConfig;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.time.LocalDateTime;
 
 /**
  * 用户 Service 实现
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
-    @Value("${upload.path}")
-    private String uploadPath;
-
-    @Value("${upload.base-url}")
-    private String uploadBaseUrl;
-
-    @Value("${upload.max-image-size}")
-    private DataSize maxImageSize;
-
     private final JwtUtil jwtUtil;
 
     private final PasswordUtil passwordUtil;
+
+    private final MinioService minioService;
+
+    private final MinioConfig minioConfig;
 
     @Override
     public void register(RegisterDTO dto) {
@@ -85,7 +82,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         UserVO vo = new UserVO();
         BeanUtils.copyProperties(user, vo);
         if (user.getAvatar() != null) {
-            vo.setAvatar(uploadBaseUrl + "/upload/" + user.getAvatar());
+            vo.setAvatar(minioService.getPresignedUrl(user.getAvatar()));
         }
         return vo;
     }
@@ -108,7 +105,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String oldAvatarPath = user.getAvatar();
 
         if (avatar != null && !avatar.isEmpty()) {
-            newAvatarPath = FileUtil.saveImage(avatar, uploadPath, maxImageSize.toBytes());
+            // 校验文件大小
+            if (avatar.getSize() > DataSize.parse(minioConfig.getMaxImageSize()).toBytes()) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "头像大小超过限制");
+            }
+            // 上传到 MinIO
+            String extension = FileUtil.getExtension(avatar.getOriginalFilename());
+            String objectName = "avatar/" + id + "_" + System.currentTimeMillis()
+                    + (extension.isEmpty() ? "" : "." + extension);
+            minioService.upload(avatar, objectName);
+            newAvatarPath = objectName;
         }
 
         try {
@@ -127,10 +133,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             user.setUpdateTime(LocalDateTime.now());
             updateById(user);
         } catch (Exception e) {
+            // 回滚：删除新上传的头像
             if (newAvatarPath != null) {
-                File newFile = new File(uploadPath, newAvatarPath);
-                if (newFile.exists()) {
-                    newFile.delete();
+                try {
+                    minioService.delete(newAvatarPath);
+                } catch (Exception ex) {
+                    log.warn("回滚头像删除失败: {}", newAvatarPath, ex);
                 }
             }
             if (e instanceof BusinessException businessException) {
@@ -139,10 +147,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED);
         }
 
+        // 删除旧头像
         if (newAvatarPath != null && oldAvatarPath != null) {
-            File oldFile = new File(uploadPath, oldAvatarPath);
-            if (oldFile.exists()) {
-                oldFile.delete();
+            try {
+                minioService.delete(oldAvatarPath);
+            } catch (Exception e) {
+                log.warn("旧头像删除失败: {}", oldAvatarPath, e);
             }
         }
     }
@@ -184,7 +194,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             UserVO vo = new UserVO();
             BeanUtils.copyProperties(user, vo);
             if (user.getAvatar() != null) {
-                vo.setAvatar(uploadBaseUrl + "/upload/" + user.getAvatar());
+                vo.setAvatar(minioService.getPresignedUrl(user.getAvatar()));
             }
             return vo;
         }).toList());

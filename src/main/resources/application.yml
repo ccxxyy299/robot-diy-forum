@@ -8,8 +8,8 @@ spring:
     password: ${DB_PASS}
   servlet:
     multipart:
-      max-file-size: ${UPLOAD_MAX_SIZE:5MB}
-      max-request-size: 10MB
+      max-file-size: 500MB
+      max-request-size: 500MB
 
 server:
   port: ${SERVER_PORT}
@@ -34,11 +34,14 @@ jwt:
   secret: ${JWT_SECRET}
   expire: ${JWT_EXPIRE}
 
-upload:
-  path: ${UPLOAD_PATH}
-  base-url: ${UPLOAD_BASE_URL}
-  max-image-size: ${UPLOAD_MAX_SIZE}
-  max-file-size: ${UPLOAD_FILE_MAX_SIZE}
+minio:
+  endpoint: ${MINIO_ENDPOINT}
+  access-key: ${MINIO_ACCESS_KEY}
+  secret-key: ${MINIO_SECRET_KEY}
+  bucket: ${MINIO_BUCKET}
+  url-expire: 3600
+  max-image-size: ${MINIO_MAX_IMAGE_SIZE:5MB}
+  max-file-size: ${MINIO_MAX_FILE_SIZE:20MB}
   max-image-count: 9
   max-file-count: 5
 
