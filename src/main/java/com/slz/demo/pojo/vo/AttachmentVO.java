@@ -31,14 +31,9 @@ public class AttachmentVO {
     private String fileType;
 
     /**
-     * 图片预览地址（直接访问磁盘文件的静态资源地址）
+     * 图片附件预览地址（签名 URL）
      */
     private String url;
-
-    /**
-     * 下载地址（通过接口下载，图片和文件都可用）
-     */
-    private String downloadUrl;
 
     /**
      * 关联类型：TOPIC / REPLY

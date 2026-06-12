@@ -235,10 +235,9 @@ public class ForumAttachmentServiceImpl extends ServiceImpl<ForumAttachmentMappe
         vo.setFileSize(entity.getFileSize());
         vo.setFileType(entity.getFileType());
 
-        // 生成签名 URL（有效期 1 小时）
+        // 生成预览签名 URL（有效期 1 小时）
         try {
             vo.setUrl(minioService.getPresignedUrl(entity.getFilePath()));
-            vo.setDownloadUrl(minioService.getDownloadPresignedUrl(entity.getFilePath(), entity.getFileName()));
         } catch (Exception e) {
             log.warn("生成签名URL失败: {}", entity.getFilePath(), e);
         }

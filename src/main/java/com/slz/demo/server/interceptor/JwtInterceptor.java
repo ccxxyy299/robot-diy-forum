@@ -50,7 +50,9 @@ public class JwtInterceptor implements HandlerInterceptor {
             "/category/selectAll",
             // 标签浏览
             "/tag/selectAll",
-            "/tag/search"
+            "/tag/search",
+            // 附件访问
+            "/attachment/**"
     );
 
     @Override

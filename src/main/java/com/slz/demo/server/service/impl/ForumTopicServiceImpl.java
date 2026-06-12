@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.slz.demo.common.enumeration.ErrorCode;
+import com.slz.demo.common.enumeration.UserRole;
 import com.slz.demo.common.exception.BusinessException;
 import com.slz.demo.common.util.UserContext;
 import com.slz.demo.pojo.dto.TopicAndAttachmentDTO;
@@ -196,8 +197,20 @@ public class ForumTopicServiceImpl extends ServiceImpl<ForumTopicMapper, ForumTo
     @Override
     public TopicVO detail(Long id) {
         ForumTopic topic = getById(id);
-        if (topic == null || topic.getStatus() == 0) {
+        if (topic == null) {
             throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
+        }
+
+        // 隐藏帖子：仅管理员和贴主可查看
+        if (topic.getStatus() == 0) {
+            boolean canView = false;
+            if (UserContext.get() != null) {
+                canView = UserContext.get().getRole() == UserRole.ADMIN
+                        || UserContext.get().getUserId().equals(topic.getCreatorId());
+            }
+            if (!canView) {
+                throw new BusinessException(ErrorCode.TOPIC_NOT_FOUND);
+            }
         }
 
         // 增加浏览数
