@@ -5,6 +5,7 @@ import com.slz.demo.common.exception.BusinessException;
 import com.slz.demo.common.util.JwtUtil;
 import com.slz.demo.common.util.UserContext;
 import com.slz.demo.pojo.ao.RoleAO;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -67,16 +68,12 @@ public class JwtInterceptor implements HandlerInterceptor {
 
         log.debug("请求: {} {}", method, path);
 
-        String auth = request.getHeader("Authorization");
+        // 解析 Token：优先 Authorization Header，回退到 Cookie
+        String token = resolveToken(request);
 
         // 有 Token 时尝试解析（公开接口也解析，以便获取用户身份）
-        if (auth != null && !auth.isBlank()) {
-            if (!auth.startsWith("Bearer ")) {
-                log.warn("Token格式错误: {} {}", method, path);
-                throw new BusinessException(ErrorCode.TOKEN_INVALID);
-            }
+        if (token != null && !token.isBlank()) {
             try {
-                String token = auth.substring(7);
                 RoleAO ao = jwtUtil.parseToken(token);
                 UserContext.set(ao);
                 return true;
@@ -110,5 +107,35 @@ public class JwtInterceptor implements HandlerInterceptor {
 
     private boolean isPublicPath(String path) {
         return PUBLIC_PATHS.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
+    }
+
+    /**
+     * 从请求中解析 JWT Token
+     * <p>
+     * 优先从 Authorization Header 读取（主站后端服务调用），
+     * 回退到 Cookie 读取（浏览器自动携带）。
+     */
+    private String resolveToken(HttpServletRequest request) {
+        // 1. 从 Authorization Header 取
+        String auth = request.getHeader("Authorization");
+        if (auth != null && !auth.isBlank()) {
+            if (!auth.startsWith("Bearer ")) {
+                log.warn("Token格式错误");
+                throw new BusinessException(ErrorCode.TOKEN_INVALID);
+            }
+            return auth.substring(7);
+        }
+
+        // 2. 从 Cookie 取（前端已改为 Cookie 存储）
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("token".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+
+        return null;
     }
 }

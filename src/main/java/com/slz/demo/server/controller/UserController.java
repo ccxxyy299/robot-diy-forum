@@ -9,6 +9,8 @@ import com.slz.demo.pojo.dto.UserPageQueryDTO;
 import com.slz.demo.pojo.vo.UserVO;
 import com.slz.demo.server.annotation.RoleRequired;
 import com.slz.demo.server.service.UserService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * 用户接口
+ * 用户
  */
 @RestController
 @RequestMapping("/user")
@@ -50,6 +52,20 @@ public class UserController {
     @PostMapping("/login")
     public Result<String> login(@Valid @RequestBody LoginDTO dto) {
         return Result.success(userService.login(dto));
+    }
+
+    /**
+     * 用户退出登录
+     * @param response
+     * @return
+     */
+    @PostMapping("/logout")
+    public Result<String> logout(HttpServletResponse response) {
+        Cookie cookie = new Cookie("token", null);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
+        return Result.success("已退出");
     }
 
     /**
