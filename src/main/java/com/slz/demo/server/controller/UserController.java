@@ -13,6 +13,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,6 +34,9 @@ public class UserController {
 
     private final UserService userService;
 
+    @Value("${jwt.expire}")
+    private long jwtExpire;
+
     /**
      * 用户注册
      * @param dto
@@ -47,11 +51,22 @@ public class UserController {
     /**
      * 用户登录
      * @param dto
+     * @param response
      * @return
      */
     @PostMapping("/login")
-    public Result<String> login(@Valid @RequestBody LoginDTO dto) {
-        return Result.success(userService.login(dto));
+    public Result<String> login(@Valid @RequestBody LoginDTO dto, HttpServletResponse response) {
+        String token = userService.login(dto);
+
+        Cookie cookie = new Cookie("token", token);
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setAttribute("SameSite", "Lax");
+        cookie.setMaxAge((int) (jwtExpire / 1000));
+        response.addCookie(cookie);
+
+        return Result.success("登录成功");
     }
 
     /**
